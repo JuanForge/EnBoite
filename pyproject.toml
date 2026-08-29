@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "enboite"
+version = "0.0.1"
+description = "Give your AI agent full control over a system through SSH."
+readme = "README.md"
+requires-python = ">=3.12"
+license = {file = "LICENSE"}
+authors = [
+    {name = "JuanForge"}
+]
+
+dependencies = [
+    "requests",
+    "orjson",
+    "rich",
+    "paramiko",
+    "types-paramiko",
+    "psutil",
+    "types-psutil",
+    "geoip2",
+    "ddgs",
+    "docker",
+    "types-docker",
+    "pydantic",
+    "markdown_it"
+]
+
+[project.scripts]
+enboite = "enboite.main:main"
+
+[project.urls]
+Homepage = "https://github.com/JuanForge/EnBoite"
+Repository = "https://github.com/JuanForge/EnBoite"

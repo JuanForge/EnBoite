@@ -1,3 +1,12 @@
+/dev
+*.pdf
+/tooling.py
+GeoLite*
+dev.*
+0.py
+chat.log*
+pyrefly.toml
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
@@ -216,3 +225,5 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+!/src/enboite/lib
