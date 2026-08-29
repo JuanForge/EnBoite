@@ -46,6 +46,7 @@ def _main(
         t.container_images,
         t.screenshot,
         t.read_media,
+        t.fetch_url_raw_v1,
         
         t.test
     ]
@@ -54,7 +55,7 @@ def _main(
         print(json.dumps(tools, indent=4))
     
     session = llm.client(
-        model or "qwen3.8:27b",
+        model or "qwen3:14b" or "qwen3.8:27b",  # noqa: SIM222
         think=thinking,
         num_ctx=llm_ctx,
         tools=tools,

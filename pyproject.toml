@@ -26,7 +26,16 @@ dependencies = [
     "docker",
     "types-docker",
     "pydantic",
-    "markdown_it"
+    #"markdown-it",
+    "requests",
+    "tqdm",
+    "notify-py",
+    "py-cpuinfo",
+    "distro",
+    "screeninfo",
+    "mss",
+    "pillow",
+    "requests[socks]"
 ]
 
 [project.scripts]

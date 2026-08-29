@@ -362,12 +362,34 @@ def search_web(query: str, max_results: int = 5):
 
 def fetch_url_v1(url: str):
     """
-    retourne le contenue d'une page
+    retourne le contenue d'une page.
+    format : markdown
     """
     return DDGS().extract(
         url,
         fmt="text_markdown",
     )["content"]
+
+def fetch_url_raw_v1(url: str, proxy: str|None = None):
+    """
+    retourne le contenue d'une page.
+    format : html/raw
+    
+    - proxy:
+            - exmanples:
+                        "socks5h://127.0.0.1:9050"
+    """
+    
+    kwargs = {}
+    
+    if proxy:
+        kwargs["proxies"] = {
+            "http": proxy,
+            "https": proxy,
+        }
+    
+    # pyrefly: ignore [bad-argument-type]
+    return requests.get(url, **kwargs).text
 
 import secrets
 
