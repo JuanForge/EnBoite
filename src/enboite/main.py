@@ -85,7 +85,8 @@ def _main(
         t.file_write,
         t.file_delete,
         t.file_move,
-        t.file_copy
+        t.file_copy,
+        t.execute_python
     ]
     tools = tooling.build_v2(tools)
     if dbg_tools:
@@ -128,6 +129,7 @@ def _main(
                 refresh_per_second=10
             )
             live.start()
+            t.LIVE = live
             content = ""
             thinking_data = ""
             tools_data = ""

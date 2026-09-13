@@ -95,6 +95,30 @@ class add:
         for i in args:
             self.result += f"\n{i}"
 
+from rich.live import Live as rich_Live
+
+LIVE: None | rich_Live = None
+
+def _input_live(*args, y_n: bool=True) -> str|bool:
+    try:
+        if LIVE:
+            LIVE.stop()
+    except Exception as e:  # noqa: BLE001
+        print(e)
+    for i in args:
+        print(repr(i))
+    value = input("input requit y/n >" if y_n else "input requit >").strip()
+    try:
+        if LIVE:
+            LIVE.start()
+    except Exception as e:  # noqa: BLE001
+        print(e)
+    
+    if y_n and value in ["y", "yes"]:
+        return True
+    
+    return value
+
 from datetime import datetime
 
 
@@ -773,6 +797,51 @@ def file_copy(source: str, destination: str) -> str:
     
     shutil.copy2(str(src), str(dst))
     return f"Copied from {source} to {destination}"
+
+import subprocess  # noqa: F811
+import sys
+
+
+def execute_python(code: str, timeout: int = 60) -> dict|str:
+    """
+    Exécute du code Python dans un sous-processus.
+    
+    - code:
+            Code Python à exécuter.
+    - timeout:
+               Délai maximal d'execution secondes (défaut 60).
+               max : 200
+    
+    Returns: Dictionnaire contenant stdout, stderr, returncode.
+    """
+    timeout = max(0, min(200, timeout))
+    if _input_live(code, "execute_python", y_n=True):
+        result = {}
+        
+        try:
+            proc = subprocess.run(
+                [sys.executable, "-c", code],
+                capture_output=True,
+                text=True,
+                timeout=timeout,
+                check=False
+            )
+            
+            result["stdout"] = proc.stdout
+            result["stderr"] = proc.stderr
+            result["returncode"] = str(proc.returncode)
+        
+        except subprocess.TimeoutExpired:
+            result["exception"] = f"Timeout après {timeout}s"
+            result["stderr"] = "Killed by timeout"
+        
+        except Exception as e:  # noqa: BLE001
+            result["exception"] = str(e)
+        
+        # pyrefly: ignore [bad-return]
+        return str(result)
+    else:
+        return "The user refused execution."
 
 
 
