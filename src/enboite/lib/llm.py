@@ -25,6 +25,7 @@ class client:
         keep_alive: str|int|None = None,
         tools: list|None = None,
         endpoint: str = "http://127.0.0.1:11434",
+        proxy: str|None = None,
         timeout: None|int = None,
         printError: bool = False
     ) -> None:
@@ -45,6 +46,13 @@ class client:
         self.token_per_sec = 0
         self._systemPrompt()
         self.printError = printError
+        if proxy:
+            self.http.proxies.update(
+                {
+                    "http": f"socks5h://{proxy}",
+                    "https": f"socks5h://{proxy}"
+                }
+            )
     
     def clear(self):
         self.messages = []

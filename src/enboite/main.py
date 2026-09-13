@@ -38,7 +38,9 @@ def _main(
     limit_content_size: int | None,
     dbg_tools: bool,
     llm_ctx: int|None,
-    printError: bool
+    printError: bool,
+    endpoint: str,
+    proxy: str|None,
 ):
     
     save_chat_file = "chat.log.bin"
@@ -90,7 +92,9 @@ def _main(
         tools=tools,
         system_prompt=open("./prompt.txt", "r", encoding="utf-8").read(),  # noqa: SIM115
         keep_alive="20m",
-        printError=printError
+        printError=printError,
+        endpoint=endpoint,
+        proxy=proxy
     )
     t.SESSION_LLM = session
     
@@ -235,6 +239,14 @@ def main():
         "--display-error",
         action="store_true"
     )
+    parser.add_argument(
+        "--endpoint",
+        default="http://127.0.0.1:11434"
+    )
+    parser.add_argument(
+        "--proxy",
+        default=None
+    )
     args = parser.parse_args()
     
     _main(
@@ -245,5 +257,7 @@ def main():
         limit_content_size=args.limit_content_size,
         llm_ctx=args.llm_ctx,
         model=args.model,
-        printError = args.display_error
+        printError = args.display_error,
+        endpoint=args.endpoint,
+        proxy=args.proxy
     )
