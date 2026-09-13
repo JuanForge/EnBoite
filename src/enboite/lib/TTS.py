@@ -5,8 +5,13 @@ from io import BytesIO
 from urllib.parse import quote
 
 import requests
-import sounddevice as sd
-import soundfile as sf
+
+sd = sf = None
+try:
+    import sounddevice as sd
+    import soundfile as sf
+except ImportError as e:
+    print(e)
 
 PT_FILE: str = ""
 ENABLE: bool = False
@@ -105,9 +110,10 @@ def TTS_make_pt(input: str, ref: str = "", ref_file: str = "", x_vector_only: bo
     return out
 
 def _TTSspeaker(content: bytes) -> None:
-    audio, sample_rate = sf.read(BytesIO(content))
-    sd.play(audio, sample_rate)
-    sd.wait()
+    if sf and sd:
+        audio, sample_rate = sf.read(BytesIO(content))
+        sd.play(audio, sample_rate)
+        sd.wait()
 
 def TTSgen(text: str, pt: str = "") -> bytes:
     """

@@ -37,9 +37,13 @@ dependencies = [
     "mss",
     "pillow",
     "requests[socks]",
-    "humanize",
+    "humanize"
+]
+
+[project.optional-dependencies]
+full = [
     "sounddevice",
-    "soundfile"
+    "soundfile",
 ]
 
 [project.scripts]

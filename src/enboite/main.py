@@ -6,8 +6,13 @@ import sys
 import time
 from io import BytesIO
 
-import sounddevice as sd
-import soundfile as sf
+sd = sf = None
+try:
+    import sounddevice as sd
+    import soundfile as sf
+except ImportError as e:
+    print(e)
+
 from rich.console import Console, Group
 from rich.live import Live
 from rich.markdown import Markdown
@@ -19,9 +24,10 @@ from enboite.lib import tooling as t
 
 
 def speaker(content: bytes) -> None:
-    audio, sample_rate = sf.read(BytesIO(content))
-    sd.play(audio, sample_rate)
-    sd.wait()
+    if sd and sf:
+        audio, sample_rate = sf.read(BytesIO(content))
+        sd.play(audio, sample_rate)
+        sd.wait()
 
 
 def _main(
