@@ -1,3 +1,4 @@
+import time
 from collections.abc import Generator
 from typing import Literal
 
@@ -15,7 +16,8 @@ class client:
             "qwen3.8:27b",
             "qwen3:14b",
             "qwen3.6:35b-a3b",
-            "ornith-1.5:35b"
+            "ornith-1.5:35b",
+            "qwen3:8b"
         ] | str,
         think: bool|None = None,
         system_prompt: str|None = None,
@@ -23,7 +25,8 @@ class client:
         keep_alive: str|int|None = None,
         tools: list|None = None,
         endpoint: str = "http://127.0.0.1:11434",
-        timeout: None|int = None
+        timeout: None|int = None,
+        printError: bool = False
     ) -> None:
         self.model = model
         self.think = think
@@ -41,6 +44,7 @@ class client:
         self.total_token = 0
         self.token_per_sec = 0
         self._systemPrompt()
+        self.printError = printError
     
     def clear(self):
         self.messages = []
@@ -69,22 +73,12 @@ class client:
             for key, value in i.items():
                 print(f"{key} > {str(value)[:100]}")
     
-    def generate_raw(self, content: str) -> Generator[dict]:
-        if content != "":
-            self.messages.append(
-                {
-                    "role": "user",
-                    "content": content,
-                }
-            )
-        
-        del content
-        
+    def get(self, message: str|None = None):
         response = self.http.post(
             f"{self.endpoint}/api/chat",
             json={
                 "model": self.model,
-                "messages": self.messages,
+                "messages": [{"role": "user","content": message,}] if message else self.messages,
                 "stream": True,
                 **({"think": self.think} if self.think is not None else {}),
                 **({"tools": self.tools} if self.tools is not None else {}),
@@ -96,6 +90,21 @@ class client:
             timeout=self.timeout,
             stream=True
         )
+        return response
+    
+    def generate_raw(self, content: str) -> Generator[dict]:
+        if content != "":
+            self.messages.append(
+                {
+                    "role": "user",
+                    "content": content,
+                }
+            )
+        
+        del content
+        
+        response = self.get()
+        
         if response.status_code != 200:
             print(self.debug_chat())
             print(response.text)
@@ -171,6 +180,8 @@ class client:
                     tool_result = func(**arguments)
                 except Exception as e:  # noqa: BLE001
                     tool_result = f"Tool '{name}' failed: {type(e).__name__}: {e}"
+                    if self.printError:
+                        print(tool_result)
                 
                 images = None
                 if type(tool_result) is dict and tool_result['type'] == "images":
@@ -185,3 +196,19 @@ class client:
                         **({"images": images} if images else {}),
                     }
                 )
+    
+    def unload_llm(self) -> None:
+        i = 0
+        think_old = self.think
+        keep_old = self.keep_alive
+        self.think = False
+        self.keep_alive = 0
+        while self.http.get(f"{self.endpoint}/api/ps").json()["models"]:
+            i+= 0.5
+            print("unload...")
+            print(f"...({i}s)")
+            self.get("Do not respond at all.")
+            time.sleep(i)
+        print("ok")
+        self.think = think_old
+        self.keep_alive = keep_old

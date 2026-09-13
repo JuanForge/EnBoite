@@ -3,15 +3,25 @@ import io
 import json
 import os
 import sys
+import time
+from io import BytesIO
 
+import sounddevice as sd
+import soundfile as sf
 from rich.console import Console, Group
 from rich.live import Live
 from rich.markdown import Markdown
 from rich.text import Text
 from tqdm import tqdm
 
-from enboite.lib import llm, tooling
+from enboite.lib import TTS, llm, tooling
 from enboite.lib import tooling as t
+
+
+def speaker(content: bytes) -> None:
+    audio, sample_rate = sf.read(BytesIO(content))
+    sd.play(audio, sample_rate)
+    sd.wait()
 
 
 def _main(
@@ -21,8 +31,10 @@ def _main(
     thinking: bool,
     limit_content_size: int | None,
     dbg_tools: bool,
-    llm_ctx: int|None
+    llm_ctx: int|None,
+    printError: bool
 ):
+    
     save_chat_file = "chat.log.bin"
     
     t.DOCKER_CONTAINER_MAX = 1
@@ -42,13 +54,24 @@ def _main(
         t.search_web,
         t.fetch_url_v1,
         t.ssh_tranfer_client2hote,
+        t.ssh_tranfer_hote2client,
         t.container_start,
         t.container_images,
         t.screenshot,
         t.read_media,
         t.fetch_url_raw_v1,
-        
-        t.test
+        t.TTS_set_pt,
+        t.TTS_make_pt,
+        t.TTS_CHANGE,
+        t.TTS_generator,
+        t.unload_llm,
+        t.container_stop_all,
+        t.mkdir,
+        t.file_info,
+        t.file_write,
+        t.file_delete,
+        t.file_move,
+        t.file_copy
     ]
     tools = tooling.build_v2(tools)
     if dbg_tools:
@@ -60,8 +83,10 @@ def _main(
         num_ctx=llm_ctx,
         tools=tools,
         system_prompt=open("./prompt.txt", "r", encoding="utf-8").read(),  # noqa: SIM115
-        keep_alive="20m"
+        keep_alive="20m",
+        printError=printError
     )
+    t.SESSION_LLM = session
     
     if save_chat and os.path.isfile(save_chat_file):
         with open(save_chat_file, "rb") as f:
@@ -73,10 +98,14 @@ def _main(
     _max_size_thinking = 500
     _max_size_tools = 500
     
+    TTS_time = 1.5
+    
     live = None
     try:
         while True:
             _input = rich_console.input(">") if not prompt else prompt
+            TTS_last = time.monotonic()
+            TTS_chunk = ""
             live = Live(
                 "",
                 console=rich_console,
@@ -91,6 +120,9 @@ def _main(
                 try:
                     for chunk in session.generate(_input):
                         if chunk["type"] == "content":
+                            if TTS.status():
+                                TTS_chunk += chunk["content"]
+                            
                             content += chunk["content"]
                             if limit_content_size:
                                 content = content[-limit_content_size:]
@@ -107,6 +139,12 @@ def _main(
                         
                         else:
                             raise RuntimeError(f"invalid type : {chunk["type"]}")
+                        
+                        if TTS.status() and (chunk["type"] == "done" or (time.monotonic()-TTS_time> TTS_last and len(chunk["type"]) >= 20) ):  # noqa: SIM102
+                            if TTS_chunk:
+                                speaker(TTS.TTSgen(TTS_chunk))
+                                TTS_chunk = ""
+                                TTS_last = time.monotonic()
                         
                         bar_io = io.StringIO()
                         bar = tqdm(
@@ -187,6 +225,10 @@ def main():
         "--dbg-tools",
         action="store_true"
     )
+    parser.add_argument(
+        "--display-error",
+        action="store_true"
+    )
     args = parser.parse_args()
     
     _main(
@@ -196,5 +238,6 @@ def main():
         thinking=args.thinking,
         limit_content_size=args.limit_content_size,
         llm_ctx=args.llm_ctx,
-        model=args.model
+        model=args.model,
+        printError = args.display_error
     )

@@ -29,13 +29,17 @@ dependencies = [
     #"markdown-it",
     "requests",
     "tqdm",
+    "types-tqdm",
     "notify-py",
     "py-cpuinfo",
     "distro",
     "screeninfo",
     "mss",
     "pillow",
-    "requests[socks]"
+    "requests[socks]",
+    "humanize",
+    "sounddevice",
+    "soundfile"
 ]
 
 [project.scripts]

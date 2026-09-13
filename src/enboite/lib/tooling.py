@@ -194,6 +194,20 @@ from pathlib import Path  # noqa: F811
 BASE = (Path.home() / "Documents" / "enboite-share" / "share").resolve()
 os.makedirs(BASE, exist_ok=True)
 
+def _secure_path(input, make: bool = True):
+    """RAISE"""
+    if Path(input).is_absolute():
+        raise ValueError("Absolute path prohibited")
+    
+    path = (BASE / input).resolve()
+    if not path.is_relative_to(BASE):
+        raise ValueError("Path traversal forbidden")
+    
+    if make:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+    
+    return Path(path)
+
 def ssh_tranfer_client2hote(file_source: str, file_hote: str):
     """
     Allows transferring a file (files only) from the SSH connection to the user's machine.
@@ -202,18 +216,28 @@ def ssh_tranfer_client2hote(file_source: str, file_hote: str):
     if ssh_objet is None:
         return "No SSH connection was created beforehand."
     
-    if Path(file_hote).is_absolute():
-        raise ValueError("Absolute path prohibited")
-    
-    path = (BASE / file_hote).resolve()
-    if not path.is_relative_to(BASE):
-        raise ValueError("Path traversal forbidden")
+    file = _secure_path(file_hote)
     
     ssh_objet.open_sftp().get(
         file_source,
-        path
+        file
     )
-    return f"True, file hote is : {path}"
+    return f"True, file hote is : {file}"
+
+def ssh_tranfer_hote2client(file_hote: str, file_client: str) -> str:
+    """
+    copier un fichier local sur le serveur ssh
+    """
+    if ssh_objet is None:
+        return "No SSH connection was created beforehand."
+    
+    file = _secure_path(file_hote)
+    
+    ssh_objet.open_sftp().put(
+        file,
+        file_client
+    )
+    return f"True, file client is : {file_client}"
 
 def ssh_close():
     """
@@ -459,6 +483,9 @@ def container_start(
     try:
         client = docker.from_env()
         
+        # base image
+        client.images.pull(base)
+        
         try:
             client.images.get(image)
         except docker.errors.ImageNotFound:
@@ -557,11 +584,192 @@ def read_media(file: str):
     with open(file, "rb") as f:
         return {"type": "images", "value": [base64.b64encode(f.read()).decode("ascii")]}
 
+from enboite.lib import TTS
 
-def test(value: list[tuple[int, int]]):
+
+def TTS_make_pt(input: str, ref: str = "", ref_file: str = "", x_vector_only: bool = False) -> str:
     """
-    ne pas utilisé.
-    sert a rien.
+    Generate a .pt voice profile file from an audio recording and return the path to the generated file.
+    
+    - input:
+             Path to the audio file containing the voice sample.
+             Minimum: 3s
+             Recommended: 5–10s
+             Maximum: 120s
+    
+    - ref:
+           Text transcription of the speech contained in the audio file. This transcription is used as the reference text for voice cloning.
+    - ref_file:
+                Allows specifying the transcription contained in a file, which is very useful for avoiding costly memory and token operations.
+    - x_vector_only:
+                     Set to true when the audio cannot be transcribed. When true, the voice embedding is extracted without using a text transcription.
+    
+    Always prioritize `ref_file` over `ref` whenever both are available.
+    
+    The file path of the generated .pt voice profile.
     """
+    return TTS.TTS_make_pt(input, ref, ref_file, x_vector_only)
+
+def TTS_set_pt(file: str) -> str:
+    """
+    définie le .pt ( voix spécifique ) utiliser pour tout les TTS future
+    """
+    return TTS.TTS_fix(file)
+
+def TTS_CHANGE() -> str:
+    """
+    Enable/disable text-to-speech (TTS) for LLM responses: when TTS is enabled, responses are automatically read aloud.
+    """
+    
+    if not TTS.ready():
+        return "TTS non conforme pour fonctionner"
+    TTS.change()
+    
+    return f"status : {TTS.status()}"
+
+def TTS_status() -> bool:
+    """
+    return l'état de l'activation du TTS
+    """
+    return TTS.ENABLE
+
+def TTS_generator(input: str, outputPath: str) -> str:
+    """
+    Permet de générer un audio avec la voix définie
+    
+    - input:
+             Texte a prononcer
+    - ouput:
+             WAV générer qui contient le résultat de la génération audio
+             Path seulement relatif accecpeté
+    
+    A VRAM OOM is very likely to occur. Consider using an unload if available.
+    """
+    file = _secure_path(outputPath)
+    
+    with open(file, "wb") as f:
+        f.write(TTS.TTSgen(input))
+    
+    return f"file in hote disk : {file}"
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from enboite.lib import llm
+
+SESSION_LLM: "None | llm.client" = None
+
+def unload_llm() -> None:
+    """
+    Frees the VRAM used by the current model.
+    The effect only persists until the next request that uses it.
+    Prefer a tool suite if unloading is required.
+    """
+    if SESSION_LLM:
+        SESSION_LLM.unload_llm()
+    else:
+        raise RuntimeError("SESSION_LLM not set:653")
+
+def container_stop_all() -> None:
+    """
+    Permet de supprimer/stopper tous les container temporairer créer par vous
+    """
+    for container in DOCKER_CONTAINER_LIST:
+        container.stop(timeout=1)
+
+
+# ==== FS ====
+import datetime as dt
+import shutil
+
+import humanize
+
+
+def mkdir(path: str) -> str:
+    """
+    Creates a directory (and parent directories if needed).
+    The path is relative to the shared base directory.
+    Returns the absolute path of the created directory.
+    """
+    target = _secure_path(path, make=True)
+    os.makedirs(target, exist_ok=True)
+    return f"Directory created: {target}"
+
+def file_info(path: str) -> dict:
+    """
+    Returns metadata about a file (size, creation time, modification time, etc.)
+    The path is relative to the shared base directory.
+    """
+    target = _secure_path(path, make=False)
+    
+    if not target.exists():
+        raise FileNotFoundError(f"File not found: {path}")
+    
+    stat = target.stat()
+    return {
+        "name": target.name,
+        "path": str(target),
+        "size_bytes": stat.st_size,
+        "size_human": humanize.naturalsize(stat.st_size, binary=True),
+        "st_ctime": dt.datetime.fromtimestamp(stat.st_ctime, tz=dt.UTC).isoformat(),
+        "st_mtime": dt.datetime.fromtimestamp(stat.st_mtime, tz=dt.UTC).isoformat(),
+        "is_file": target.is_file(),
+        "is_dir": target.is_dir()
+    }
+
+def file_write(file: str, content: str, mode: str = "w") -> str:
+    """
+    Writes text content to a file. Creates the file if it doesn't exist.
+    For appending content, use mode='a'. The path is relative to the shared base.
+    """
+    target = _secure_path(file, make=True)
+    with open(target, mode, encoding="utf-8") as f:
+        f.write(content)
+    return f"Content written to {target} ({len(content)} bytes)"
+
+def file_delete(path: str) -> str:
+    """
+    Deletes a file from the shared directory.
+    The path is relative to the shared base directory.
+    Raises an error if the file doesn't exist or if it's a directory.
+    """
+    target = _secure_path(path, make=False)
+    if not target.exists():
+        raise FileNotFoundError("File not found")
+    if target.is_dir():
+        raise IsADirectoryError("Cannot delete directory with this tool")
+    target.unlink()
+    return f"Deleted: {target}"
+
+def file_move(source: str, destination: str) -> str:
+    """
+    Moves a file from source to destination within the shared directory.
+    Paths are relative to the shared base directory.
+    """
+    src = _secure_path(source, make=False)
+    dst = _secure_path(destination, make=True)
+    
+    if not src.exists():
+        raise FileNotFoundError("Source file not found")
+    
+    shutil.move(str(src), str(dst))
+    return f"Moved from {source} to {destination}"
+
+def file_copy(source: str, destination: str) -> str:
+    """
+    Copies a file from source to destination within the shared directory.
+    Paths are relative to the shared base directory.
+    """
+    src = _secure_path(source, make=False)
+    dst = _secure_path(destination, make=True)
+    
+    if not src.exists():
+        raise FileNotFoundError("Source file not found:")
+    
+    shutil.copy2(str(src), str(dst))
+    return f"Copied from {source} to {destination}"
+
+
+
 if __name__ == "__main__":
-    pass
+    pass  # noqa: PIE790, RUF100
