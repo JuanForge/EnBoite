@@ -106,7 +106,7 @@ def _input_live(*args, y_n: bool=True) -> str|bool:
     except Exception as e:  # noqa: BLE001
         print(e)
     for i in args:
-        print(repr(i))
+        print(i)
     value = input("input requit y/n >" if y_n else "input requit >").strip()
     try:
         if LIVE:
