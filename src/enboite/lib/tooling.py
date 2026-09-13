@@ -191,8 +191,13 @@ def ssh_commande(commande: str, timeout: int = 20):
 import os
 from pathlib import Path  # noqa: F811
 
-BASE = (Path.home() / "Documents" / "enboite-share" / "share").resolve()
-os.makedirs(BASE, exist_ok=True)
+BASE = None
+
+def set_base(path: str) -> None:
+    global BASE
+    BASE = Path(path)
+    os.makedirs(BASE, exist_ok=True)
+set_base(str((Path.home() / "Documents" / "enboite-share" / "share").resolve()))
 
 def _secure_path(input, make: bool = True):
     """RAISE"""

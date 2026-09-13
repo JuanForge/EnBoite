@@ -13,6 +13,8 @@ try:
 except ImportError as e:
     print(e)
 
+from pathlib import Path
+
 from rich.console import Console, Group
 from rich.live import Live
 from rich.markdown import Markdown
@@ -41,11 +43,15 @@ def _main(
     printError: bool,
     endpoint: str,
     proxy: str|None,
+    android: bool
 ):
     
     save_chat_file = "chat.log.bin"
     
     t.DOCKER_CONTAINER_MAX = 1
+    
+    if android:
+        t.set_base(str((Path("/storage/emulated/0") / "Documents" / "enboite-share" / "share").resolve()))
     
     tools: list = [
         t.get_time,
@@ -247,6 +253,10 @@ def main():
         "--proxy",
         default=None
     )
+    parser.add_argument(
+        "--android",
+        action="store_true"
+    )
     args = parser.parse_args()
     
     _main(
@@ -259,5 +269,6 @@ def main():
         model=args.model,
         printError = args.display_error,
         endpoint=args.endpoint,
-        proxy=args.proxy
+        proxy=args.proxy,
+        android=args.android
     )
