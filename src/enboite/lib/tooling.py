@@ -106,7 +106,7 @@ def _input_live(*args, y_n: bool=True) -> str|bool:
     except Exception as e:  # noqa: BLE001
         print(e)
     for i in args:
-        print(str(i)+"n")
+        print(str(i)+"\n")
     value = input("input requit y/n >" if y_n else "input requit >").strip()
     try:
         if LIVE:
@@ -815,7 +815,7 @@ def execute_python(code: str, timeout: int = 60) -> dict|str:
     Returns: Dictionnaire contenant stdout, stderr, returncode.
     """
     timeout = max(0, min(200, timeout))
-    if _input_live(code, "execute_python", y_n=True):
+    if _input_live(f"\033[31m{code}\033[0m", "execute_python", y_n=True):
         result = {}
         
         try:

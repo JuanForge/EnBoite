@@ -120,7 +120,7 @@ def _main(
     live = None
     try:
         while True:
-            _input = rich_console.input(">") if not prompt else prompt
+            _input = rich_console.input(">").strip() if not prompt else prompt
             TTS_last = time.monotonic()
             TTS_chunk = ""
             live = Live(
