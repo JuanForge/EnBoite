@@ -153,6 +153,7 @@ class client:
             if data.get("done"):
                 self.total_token = max(self.total_token, data.get("prompt_eval_count", 0) + data.get("eval_count", 0))
                 self.token_per_sec = data["eval_count"] / (data["eval_duration"] / 1e9)
+                if content: yield {"type": "content", "content": "\n"}
                 yield {"type": "done"}
                 break
         

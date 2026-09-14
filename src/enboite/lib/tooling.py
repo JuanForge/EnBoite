@@ -140,6 +140,36 @@ def _input_live(*args, y_n: bool=True, color: bool=False) -> str|bool:
     
     return value
 
+import os
+from pathlib import Path
+
+# pyrefly: ignore [bad-assignment]
+BASE_BASE: Path = None
+# pyrefly: ignore [bad-assignment]
+BASE_SHARE: Path = None
+
+def set_base(path: str) -> None:
+    global BASE_BASE, BASE_SHARE
+    BASE_BASE = Path(path)
+    BASE_SHARE = Path(path).joinpath("share")
+    os.makedirs(BASE_BASE, exist_ok=True)
+    os.makedirs(BASE_SHARE, exist_ok=True)
+
+def _secure_path(input: str, make: bool = True):
+    """RAISE"""
+    _input = Path(input)
+    if _input.is_absolute():
+        raise ValueError("Absolute path prohibited")
+    
+    path = (BASE_SHARE / _input).resolve()
+    if not path.is_relative_to(BASE_SHARE):
+        raise ValueError("Path traversal forbidden")
+    
+    if make:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+    
+    return Path(path)
+
 from datetime import datetime
 
 
@@ -212,34 +242,6 @@ def ssh_commande(commande: str, timeout: int = 20):
     stdin, stdout, stderr = ssh_objet.exec_command(commande, timeout=min(300, timeout))  # noqa: RUF059
     
     return f"stdout : {stdout.read().decode()}, error : {stderr.read().decode()}, returncode : {stdout.channel.recv_exit_status()}"
-
-
-import os
-from pathlib import Path  # noqa: F811
-
-# pyrefly: ignore [bad-assignment]
-BASE: Path = None
-
-def set_base(path: str) -> None:
-    global BASE
-    BASE = Path(path)
-    os.makedirs(BASE, exist_ok=True)
-set_base(str((Path.home() / "Documents" / "enboite-share" / "share").resolve()))
-
-def _secure_path(input: str, make: bool = True):
-    """RAISE"""
-    _input = Path(input)
-    if _input.is_absolute():
-        raise ValueError("Absolute path prohibited")
-    
-    path = (BASE / _input).resolve()
-    if not path.is_relative_to(BASE):
-        raise ValueError("Path traversal forbidden")
-    
-    if make:
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-    
-    return Path(path)
 
 def ssh_tranfer_client2hote(file_source: str, file_hote: str):
     """
@@ -605,16 +607,23 @@ def screenshot(monitors_index: list[int]) -> dict[str, list[str] | str]:
         results.append(base64.b64encode(buffer.getvalue()).decode("ascii"))
     return {"type": "images", "value": results}
 
-def read_media(file: str):
+def read_media(file: str, host: bool = False):
     """
     Allows the LLM to receive and visually analyze an image.
     The image is directly added to the conversation so that you can see and understand its content.
     Supported formats: JPG, JPEG, PNG. Other formats may work but are not guaranteed.
     """
-    if not os.path.isfile(file):
+    if not host:
+        _path = _secure_path(file)
+    elif FS_PERMIT_HOST:
+        _path = file
+    else:
+        raise _client.FS.HostAccessDeniedError()
+    
+    if not os.path.isfile(_path):
         return 'no found the spécied input file path'
     
-    with open(file, "rb") as f:
+    with open(_path, "rb") as f:
         return {"type": "images", "value": [base64.b64encode(f.read()).decode("ascii")]}
 
 from enboite.lib import TTS
@@ -805,11 +814,14 @@ def file_copy(source: str, destination: str) -> str:
 
 def ls(
     path: str,
-    host: bool
-):
+    host: bool = False
+) -> str:
     """
     Lists all items contained in the specified directory.
     Takes only directories, not files.
+    
+    F = file
+    D = directory
     """
     if not host:
         _path = _secure_path(path)
@@ -818,7 +830,18 @@ def ls(
     else:
         raise _client.FS.HostAccessDeniedError()
     
-    return [str(i) for i in list(Path(_path).glob("*"))]
+    results: list[str] = []
+    for i in list(Path(_path).glob("*")):
+        if i.is_dir():
+            t = "D"
+        elif i.is_file():
+            t = "F"
+        else:
+            t = "unknown"
+        
+        results.append(f"{t} {i.relative_to(str(_path))}")
+    
+    return "\n".join(results).strip()
 
 def cat(
     file: str,
@@ -877,7 +900,17 @@ def pwd(host: bool = False) -> str:
     if host:
         return os.getcwd()
     else:
-        return str(BASE) 
+        return str(BASE_SHARE)
+
+def FS_request_host_access():
+    """Requests user permission to access the host filesystem."""
+    global FS_PERMIT_HOST
+    if _input_live("The assistant requests access to the host filesystem.", y_n=True, color=True):
+        FS_PERMIT_HOST = True
+        return True
+    else:
+        raise _client.UserRefusedError()
+
 
 # ==== FS ==== end
 

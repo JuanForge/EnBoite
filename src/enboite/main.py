@@ -51,7 +51,9 @@ def _main(
     t.DOCKER_CONTAINER_MAX = 1
     
     if android:
-        t.set_base(str((Path("/storage/emulated/0") / "Documents" / "enboite-share" / "share").resolve()))
+        t.set_base(str((Path("/storage/emulated/0") / "Documents" / "enboite-share").resolve()))
+    else:
+        t.set_base(str((Path.home() / "Documents" / "enboite-share" ).resolve()))
     
     tools: list = [
         t.get_time,
@@ -88,7 +90,8 @@ def _main(
         t.file_copy,
         t.execute_python,
         t.open_folder,
-        t.pwd
+        t.pwd,
+        t.FS_request_host_access
     ]
     tools = tooling.build_v2(tools)
     if dbg_tools:
@@ -261,6 +264,7 @@ def main():
     )
     parser.add_argument(
         "--android",
+        help="Must be enabled if the system is Termux/Android; only Android has been verified.",
         action="store_true"
     )
     args = parser.parse_args()
