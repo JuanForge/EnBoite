@@ -2,6 +2,15 @@ import inspect
 from pprint import pprint  # noqa: F401
 from typing import Any, get_args
 
+
+class _client:
+    class UserRefusedError(Exception):
+        def __init__(self):
+            super().__init__(
+                "The user explicitly refused to allow this tool execution.\n"
+                "Do not retry the tool call. The user, not the tool, refused the execution."
+            )
+
 TYPE_MAP = {
     str: "string",
     int: "integer",
@@ -114,8 +123,9 @@ def _input_live(*args, y_n: bool=True) -> str|bool:
     except Exception as e:  # noqa: BLE001
         print(e)
     
-    if y_n and value in ["y", "yes"]:
-        return True
+    if y_n:
+        return value in ["y", "yes"]
+    
     
     return value
 
@@ -783,6 +793,7 @@ def file_copy(source: str, destination: str) -> str:
 def ls(path: str):
     """
     Lists all items contained in the specified directory.
+    Takes only directories, not files.
     """
     return [str(i) for i in list(Path(path).glob("*"))]
 
@@ -840,7 +851,7 @@ def execute_python(code: str, timeout: int = 60) -> dict|str:
     Returns: Dictionnaire contenant stdout, stderr, returncode.
     """
     timeout = max(0, min(200, timeout))
-    if _input_live(f"\033[31m{code}\033[0m", "execute_python", y_n=True):
+    if _input_live(f"\033[48;5;52m\033[97m\n{code}\n\033[0m", "execute_python", y_n=True):
         result = {}
         
         try:
@@ -866,7 +877,21 @@ def execute_python(code: str, timeout: int = 60) -> dict|str:
         # pyrefly: ignore [bad-return]
         return str(result)
     else:
-        return "The user refused execution."
+        raise _client.UserRefusedError()
+
+def open_folder(f: str):
+    """
+    Executes the command "open <f>".
+    Works only with directories.
+    Displays the directory on the user's screen.
+    """
+    folder = Path(f)
+    
+    if folder.expanduser().is_dir():
+        subprocess.Popen(["open", str(folder)])
+        return True
+    else:
+        raise RuntimeError("The tool expects a directory, not a file.")
 
 
 

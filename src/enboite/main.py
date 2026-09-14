@@ -86,7 +86,8 @@ def _main(
         t.file_delete,
         t.file_move,
         t.file_copy,
-        t.execute_python
+        t.execute_python,
+        t.open_folder
     ]
     tools = tooling.build_v2(tools)
     if dbg_tools:
