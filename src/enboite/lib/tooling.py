@@ -128,27 +128,8 @@ def get_time():
     """
     return datetime.now().astimezone()
 
-from pathlib import Path
-
-
-def ls(path: str):
-    """
-    Lists all items contained in the specified directory.
-    """
-    return [str(i) for i in list(Path(path).glob("*"))]
-
-def cat(file: str, limit: int = 2048):
-    """
-    Displays the contents of the requested file.
-    - limit:
-             limited to the first 2048 characters by default.
-             max : 8192
-    """
-    value = 8192
-    with open(file, "r", encoding="utf-8") as f:
-        return f"#file : {file}\n{f.read(max(1, min(value, limit)))}"
-
 import subprocess
+from pathlib import Path
 
 
 def execute(commande: str):
@@ -707,7 +688,7 @@ def container_stop_all() -> None:
         container.stop(timeout=1)
 
 
-# ==== FS ====
+# ==== FS ==== start
 import datetime as dt
 import shutil
 
@@ -797,6 +778,50 @@ def file_copy(source: str, destination: str) -> str:
     
     shutil.copy2(str(src), str(dst))
     return f"Copied from {source} to {destination}"
+
+
+def ls(path: str):
+    """
+    Lists all items contained in the specified directory.
+    """
+    return [str(i) for i in list(Path(path).glob("*"))]
+
+def cat(file: str, start: int = 0, end: int = 2048):
+    """
+    Displays the contents of the requested file.
+    
+    - start:
+             Starting character position.
+             default: 0
+    
+    - end:
+           Ending character position (exclusive).
+           This is the absolute end position, NOT the number of characters to read.
+           default: 2048
+    
+    The maximum amount of content returned by a single call is 8192 characters.
+    
+    For ONLY example:
+                start=0, end=8192
+                start=8192, end=16384
+                start=16384, end=24576
+                ...
+    
+    Remember to use this tool multiple times if a complete read is required or if
+    a single read is not sufficient.
+    """
+    
+    _max = 8192
+    
+    end = min(end, start + _max)
+    
+    with open(file, "r", encoding="utf-8") as f:
+        f.seek(start)
+        content = f.read(end - start)
+    
+    return f"#Header by the tool: content: {start}-{end}: file: '{file}'\n{content}"
+
+# ==== FS ==== end
 
 import subprocess  # noqa: F811
 import sys

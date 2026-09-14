@@ -142,12 +142,14 @@ def _main(
                                 TTS_chunk += chunk["content"]
                             
                             content += chunk["content"]
+                            thinking_data = ""
                             if limit_content_size:
                                 content = content[-limit_content_size:]
                         
                         elif chunk["type"] == "thinking":
                             thinking_data += chunk["content"]
                             thinking_data = thinking_data[-_max_size_thinking:]
+                        
                         elif chunk["type"] == "tool":
                             tools_data += f'function : {chunk["function"]}\n'
                             tools_data = tools_data[-_max_size_tools:]

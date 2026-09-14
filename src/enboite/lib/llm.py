@@ -1,5 +1,6 @@
 import time
 from collections.abc import Generator
+from copy import deepcopy
 from typing import Literal
 
 import orjson
@@ -59,7 +60,14 @@ class client:
         self._systemPrompt()
     
     def export(self) -> bytes:
-        return orjson.dumps(self.messages)
+        messages = deepcopy(self.messages)
+        
+        if messages[0]["role"] == "system":
+            del messages[0]
+        else:
+            raise RuntimeError("not found the system prompt:67")
+        
+        return orjson.dumps(messages)
     
     def load(self, x: bytes) -> None:
         self.messages = orjson.loads(x)
@@ -151,7 +159,7 @@ class client:
         self.messages.append({
             "role": "assistant",
             "content": content,
-            "tool_calls": tool_calls,
+            **({"tool_calls": tool_calls} if tool_calls else {})
         })
         
         yield {"type": "tool_calls", "content": tool_calls}
