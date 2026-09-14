@@ -2,14 +2,22 @@ import inspect
 from pprint import pprint  # noqa: F401
 from typing import Any, get_args
 
+FS_PERMIT_HOST: bool = False
+
 
 class _client:
     class UserRefusedError(Exception):
         def __init__(self):
             super().__init__(
                 "The user explicitly refused to allow this tool execution.\n"
-                "Do not retry the tool call. The user, not the tool, refused the execution."
+                "Do not retry the tool call. The user, not the tool, refused the execution. Do not call this tool again during the current turn. You may use it again only after receiving a new user message."
             )
+    class FS:
+        class HostAccessDeniedError(Exception):
+            def __init__(self):
+                super().__init__(
+                    "Host filesystem access is disabled by user"
+                )
 
 TYPE_MAP = {
     str: "string",
@@ -108,15 +116,18 @@ from rich.live import Live as rich_Live
 
 LIVE: None | rich_Live = None
 
-def _input_live(*args, y_n: bool=True) -> str|bool:
+def _input_live(*args, y_n: bool=True, color: bool=False) -> str|bool:
     try:
         if LIVE:
             LIVE.stop()
     except Exception as e:  # noqa: BLE001
         print(e)
     for i in args:
-        print(str(i)+"\n")
+        if color: i = f"\033[48;5;52m\033[97m{i}\033[0m"
+        print(str(i).replace("\n", "\n ") +"\n")
+    
     value = input("input requit y/n >" if y_n else "input requit >").strip()
+    
     try:
         if LIVE:
             LIVE.start()
@@ -206,7 +217,8 @@ def ssh_commande(commande: str, timeout: int = 20):
 import os
 from pathlib import Path  # noqa: F811
 
-BASE = None
+# pyrefly: ignore [bad-assignment]
+BASE: Path = None
 
 def set_base(path: str) -> None:
     global BASE
@@ -214,12 +226,13 @@ def set_base(path: str) -> None:
     os.makedirs(BASE, exist_ok=True)
 set_base(str((Path.home() / "Documents" / "enboite-share" / "share").resolve()))
 
-def _secure_path(input, make: bool = True):
+def _secure_path(input: str, make: bool = True):
     """RAISE"""
-    if Path(input).is_absolute():
+    _input = Path(input)
+    if _input.is_absolute():
         raise ValueError("Absolute path prohibited")
     
-    path = (BASE / input).resolve()
+    path = (BASE / _input).resolve()
     if not path.is_relative_to(BASE):
         raise ValueError("Path traversal forbidden")
     
@@ -790,14 +803,29 @@ def file_copy(source: str, destination: str) -> str:
     return f"Copied from {source} to {destination}"
 
 
-def ls(path: str):
+def ls(
+    path: str,
+    host: bool
+):
     """
     Lists all items contained in the specified directory.
     Takes only directories, not files.
     """
-    return [str(i) for i in list(Path(path).glob("*"))]
+    if not host:
+        _path = _secure_path(path)
+    elif FS_PERMIT_HOST:
+        _path = path
+    else:
+        raise _client.FS.HostAccessDeniedError()
+    
+    return [str(i) for i in list(Path(_path).glob("*"))]
 
-def cat(file: str, start: int = 0, end: int = 2048):
+def cat(
+    file: str,
+    host: bool,
+    start: int = 0,
+    end: int = 2048
+):
     """
     Displays the contents of the requested file.
     
@@ -821,16 +849,35 @@ def cat(file: str, start: int = 0, end: int = 2048):
     Remember to use this tool multiple times if a complete read is required or if
     a single read is not sufficient.
     """
+    if not host:
+        _file = _secure_path(file)
+    elif FS_PERMIT_HOST:
+        _file = file
+    else:
+        raise _client.FS.HostAccessDeniedError()
+    
     
     _max = 8192
     
     end = min(end, start + _max)
     
-    with open(file, "r", encoding="utf-8") as f:
+    with open(_file, "r", encoding="utf-8") as f:
         f.seek(start)
         content = f.read(end - start)
     
-    return f"#Header by the tool: content: {start}-{end}: file: '{file}'\n{content}"
+    return f"#Header by the tool: content: {start}-{end}: file: '{_file}'\n{content}"
+
+def pwd(host: bool = False) -> str:
+    """
+    Returns the absolute path of the current directory.
+    
+    - host=False: returns the current workspace directory.
+    - host=True: returns the current host filesystem directory.
+    """
+    if host:
+        return os.getcwd()
+    else:
+        return str(BASE) 
 
 # ==== FS ==== end
 
@@ -851,7 +898,7 @@ def execute_python(code: str, timeout: int = 60) -> dict|str:
     Returns: Dictionnaire contenant stdout, stderr, returncode.
     """
     timeout = max(0, min(200, timeout))
-    if _input_live(f"\033[48;5;52m\033[97m\n{code}\n\033[0m", "execute_python", y_n=True):
+    if _input_live(code, "execute_python", y_n=True, color=True):
         result = {}
         
         try:
