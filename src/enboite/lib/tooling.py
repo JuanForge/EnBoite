@@ -290,20 +290,20 @@ def ssh_close():
     ssh_objet = None
     return True
 
-from notifypy import Notify
-
 
 def notify(title: str, message: str):
     """
     Sends a desktop notification to the user's operating system.
     The notification is displayed by the user's desktop environment.
     """
+    # pyrefly: ignore [missing-import]
+    from notifypy import Notify
+
     notification = Notify()
     notification.title = title
     notification.message = message
     notification.send()
     return True
-
 
 import platform
 
@@ -379,14 +379,15 @@ def get_ip():
     s.close()
     return f"local : {ip}, public_IPv4 : {get_ip("https://api.ipify.org")}, public_IPv6 : {get_ip("https://api6.ipify.org")}"
 
-import geoip2.database
-
 
 def get_geo_ip(ip: str):
     """
     Provides geolocation information for an IP address using GeoLite2-City,
     including the geographic coordinates (latitude and longitude).
     """
+    # pyrefly: ignore [missing-import]
+    import geoip2.database
+    
     with geoip2.database.Reader("GeoLite2-City.mmdb") as reader:
         _ = add()
         response = reader.city(ip)
@@ -590,7 +591,6 @@ def container_images():
 import base64
 from io import BytesIO
 
-import mss
 from PIL import Image
 
 
@@ -599,6 +599,9 @@ def screenshot(monitors_index: list[int]) -> dict[str, list[str] | str]:
     Review the screenshots for all specified IDs.
     Use 'system' to retrieve the total number of screenshots.
     """
+    # pyrefly: ignore [missing-import]
+    import mss
+    
     sct = mss.mss()
     results = []
     
@@ -922,7 +925,7 @@ import subprocess  # noqa: F811
 import sys
 
 
-def execute_python(code: str, timeout: int = 60) -> dict|str:
+def execute_python(code: str, timeout: int = 60, writeoutput: bool = False) -> dict|str:
     """
     Exécute du code Python dans un sous-processus.
     
@@ -931,6 +934,9 @@ def execute_python(code: str, timeout: int = 60) -> dict|str:
     - timeout:
                Délai maximal d'execution secondes (défaut 60).
                max : 200
+    - writeoutput:
+                   Affiche le résultat de l'execution sur la console utilisateur,
+                   A activer seulement si l'user requit de voir les sorties console.
     
     Returns: Dictionnaire contenant stdout, stderr, returncode.
     """
@@ -950,6 +956,8 @@ def execute_python(code: str, timeout: int = 60) -> dict|str:
             result["stdout"] = proc.stdout
             result["stderr"] = proc.stderr
             result["returncode"] = str(proc.returncode)
+            if writeoutput:
+                print(str(result))
         
         except subprocess.TimeoutExpired:
             result["exception"] = f"Timeout après {timeout}s"

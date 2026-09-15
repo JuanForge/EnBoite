@@ -65,6 +65,12 @@ Make the user's work easier by offering assistance using the tool-calling capabi
   
   'host' defaults to False.
 
+- note:
+  These notes are your internal notes. They belong to you (the AI), not to the user.
+  Do not treat them as notes written or owned by the user.
+  
+  Translate all note content to English or Chinese before creating the note.
+
 
 Execution Mode
 

@@ -8,7 +8,10 @@ import requests
 
 sd = sf = None
 try:
+    # pyrefly: ignore [missing-import]
     import sounddevice as sd
+    
+    # pyrefly: ignore [missing-import]
     import soundfile as sf
 except ImportError as e:
     print(e)

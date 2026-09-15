@@ -15,27 +15,17 @@ authors = [
 
 dependencies = [
     "requests",
+    "requests[socks]",
     "rich",
     "paramiko",
-    "types-paramiko",
-    "psutil",
-    "types-psutil",
-    "geoip2",
+    "psutil", # non permit sur android
     "ddgs",
-    "docker",
-    "types-docker",
     "pydantic",
-    #"markdown-it",
-    "requests",
     "tqdm",
-    "types-tqdm",
-    "notify-py",
     "py-cpuinfo",
     "distro",
     "screeninfo",
-    "mss",
     "pillow",
-    "requests[socks]",
     "humanize"
 ]
 
@@ -43,7 +33,17 @@ dependencies = [
 full = [
     "sounddevice",
     "soundfile",
-    "orjson"
+    "orjson",
+    "docker",
+    "geoip2",
+    "notify-py",
+    "mss"
+]
+dev = [
+    "types-docker",
+    "types-paramiko",
+    "types-psutil",
+    "types-tqdm"
 ]
 
 [project.scripts]
