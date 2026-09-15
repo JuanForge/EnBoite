@@ -123,7 +123,7 @@ def _input_live(*args, y_n: bool=True, color: bool=False) -> str|bool:
     except Exception as e:  # noqa: BLE001
         print(e)
     for i in args:
-        if color: i = f"\033[48;5;52m\033[97m{i}\033[0m"
+        if color: i = f"\033[48;5;22m\033[38;5;15m{i}\033[0m"
         print(str(i).replace("\n", "\n ") +"\n")
     
     value = input("input requit y/n >" if y_n else "input requit >").strip()
@@ -147,13 +147,17 @@ from pathlib import Path
 BASE_BASE: Path = None
 # pyrefly: ignore [bad-assignment]
 BASE_SHARE: Path = None
+# pyrefly: ignore [bad-assignment]
+BASE_NOTE: Path = None
 
 def set_base(path: str) -> None:
-    global BASE_BASE, BASE_SHARE
+    global BASE_BASE, BASE_SHARE, BASE_NOTE
     BASE_BASE = Path(path)
     BASE_SHARE = Path(path).joinpath("share")
+    BASE_NOTE = Path(path).joinpath("note")
     os.makedirs(BASE_BASE, exist_ok=True)
     os.makedirs(BASE_SHARE, exist_ok=True)
+    os.makedirs(BASE_NOTE, exist_ok=True)
 
 def _secure_path(input: str, make: bool = True):
     """RAISE"""
@@ -972,6 +976,67 @@ def open_folder(f: str):
         return True
     else:
         raise RuntimeError("The tool expects a directory, not a file.")
+
+def _secure_ID(ID: str) -> str:
+    for i in ID:
+        if not i in [str(i) for i in range(10)]:
+            raise RuntimeError("invalide ID")
+    return ID
+
+def note_new(title: str, content: str) -> str:
+    """
+    Creates a new note.
+    
+    title:
+    A short but descriptive title that summarizes the note's content.
+    Adjust the title length to the complexity of the content so that
+    it remains concise without losing important information.
+    content:
+    The content of the note.
+    
+    Returns:
+    The ID of the created note.
+    """
+    counter_file = Path(os.path.join(BASE_NOTE, "counter.ini"))
+    if not counter_file.exists():
+        counter_file.write_text("0", encoding="utf-8")
+    
+    with open(counter_file, "r") as f:
+        ID = int(_secure_ID(f.read()))
+    
+    with open(os.path.join(str(BASE_NOTE), f"{ID}.title.txt"), "w", encoding="utf-8") as f:
+        f.write(title)
+    
+    with open(os.path.join(str(BASE_NOTE), f"{ID}.content.txt"), "w", encoding="utf-8") as f:
+        f.write(content)
+    
+    with open(os.path.join(str(BASE_NOTE), f"{ID}.active"), "w", encoding="utf-8") as f:
+        f.write("0")
+    
+    with open(counter_file, "w") as f:
+        f.write(str(ID+1))
+    return str(ID)
+
+def note_all() -> str:
+    "Returns the IDs and titles of all existing notes."
+    
+    results: list[str] = []
+    for note in Path(BASE_NOTE).glob("*.active"):
+        results.append(f"ID: {note.stem}\nTitle: {open(os.path.join(BASE_NOTE, f"{note.stem}.title.txt"), "r", encoding="utf-8").read()}")  # noqa: SIM115
+    
+    return "\n".join(results).strip()
+
+def note_read(ID: str) -> str:
+    "Returns the content of a note."
+    return open(os.path.join(BASE_NOTE, f"{_secure_ID(ID)}.content.txt"), "r", encoding="utf-8").read()
+
+def note_rm(ID: str) -> None:
+    """
+    Deletes the specified note.
+    
+    Make sure the user has explicitly authorized this action before calling this tool.
+    """
+    os.unlink(os.path.join(BASE_NOTE, f"{_secure_ID(ID)}.active"))
 
 
 

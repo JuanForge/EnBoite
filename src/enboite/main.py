@@ -91,7 +91,11 @@ def _main(
         t.execute_python,
         t.open_folder,
         t.pwd,
-        t.FS_request_host_access
+        t.FS_request_host_access,
+        t.note_new,
+        t.note_all,
+        t.note_read,
+        t.note_rm
     ]
     tools = tooling.build_v2(tools)
     if dbg_tools:

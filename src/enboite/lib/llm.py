@@ -3,7 +3,19 @@ from collections.abc import Generator
 from copy import deepcopy
 from typing import Literal
 
-import orjson
+try:
+    # pyrefly: ignore [missing-import]
+    import orjson
+except ImportError as e:
+    print(e)
+    import json
+    class orjson:
+        @staticmethod
+        def loads(x):
+            return json.loads(x)
+        @staticmethod
+        def dumps(x):
+            return json.dumps(x).encode()
 import requests
 
 from enboite.lib import tooling

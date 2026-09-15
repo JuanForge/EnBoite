@@ -15,7 +15,6 @@ authors = [
 
 dependencies = [
     "requests",
-    "orjson",
     "rich",
     "paramiko",
     "types-paramiko",
@@ -44,6 +43,7 @@ dependencies = [
 full = [
     "sounddevice",
     "soundfile",
+    "orjson"
 ]
 
 [project.scripts]
