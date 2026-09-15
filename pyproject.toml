@@ -17,7 +17,6 @@ dependencies = [
     "requests",
     "requests[socks]",
     "rich",
-    "psutil", # non permit sur android
     "ddgs",
     "pydantic",
     "tqdm",
@@ -40,7 +39,8 @@ full = [
     "geoip2",
     "notify-py",
     "mss",
-    "enboite[ssh]"
+    "enboite[ssh]",
+    "psutil"
 ]
 dev = [
     "types-docker",

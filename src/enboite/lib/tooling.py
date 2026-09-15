@@ -16,9 +16,6 @@ from typing import TYPE_CHECKING, Any, get_args
 import cpuinfo
 import distro
 import humanize
-
-# pyrefly: ignore [untyped-import]
-import psutil
 from pydantic import TypeAdapter
 from rich.live import Live as rich_Live
 from screeninfo import get_monitors
@@ -324,6 +321,8 @@ def system():
     
     Available information: display, OS, CPU, RAM, storage, etc.
     """
+    import psutil
+    
     _ = add()
     _("=== OS ===")
     _("Système :", platform.system())

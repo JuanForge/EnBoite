@@ -48,7 +48,6 @@ def _main(
     android: bool
 ):
     
-    save_chat_file = "chat.log.bin"
     
     t.DOCKER_CONTAINER_MAX = 1
     
@@ -56,6 +55,8 @@ def _main(
         t.set_base(str((Path("/storage/emulated/0") / "Documents" / "enboite-share").resolve()))
     else:
         t.set_base(str((Path.home() / "Documents" / "enboite-share" ).resolve()))
+    
+    save_chat_file = os.path.join(str(t.BASE_BASE), "chat.log.bin")
     
     tools: list = [
         t.get_time,
