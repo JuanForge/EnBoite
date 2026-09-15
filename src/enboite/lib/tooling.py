@@ -1,6 +1,27 @@
+from __future__ import annotations
+
+import datetime as dt
 import inspect
+import json
+import os
+import platform
+import shutil
+import subprocess
+import sys
+from datetime import datetime
+from pathlib import Path
 from pprint import pprint  # noqa: F401
-from typing import Any, get_args
+from typing import TYPE_CHECKING, Any, get_args
+
+import cpuinfo
+import distro
+import humanize
+
+# pyrefly: ignore [untyped-import]
+import psutil
+from pydantic import TypeAdapter
+from rich.live import Live as rich_Live
+from screeninfo import get_monitors
 
 FS_PERMIT_HOST: bool = False
 
@@ -74,10 +95,6 @@ def build(funcs):
         })
     return result
 
-import inspect  # noqa: F811
-
-from pydantic import TypeAdapter
-
 
 def build_v2(funcs):
     funcs = funcs if isinstance(funcs, list) else [funcs]
@@ -112,8 +129,6 @@ class add:
         for i in args:
             self.result += f"\n{i}"
 
-from rich.live import Live as rich_Live
-
 LIVE: None | rich_Live = None
 
 def _input_live(*args, y_n: bool=True, color: bool=False) -> str|bool:
@@ -140,9 +155,6 @@ def _input_live(*args, y_n: bool=True, color: bool=False) -> str|bool:
     
     return value
 
-import os
-from pathlib import Path
-
 # pyrefly: ignore [bad-assignment]
 BASE_BASE: Path = None
 # pyrefly: ignore [bad-assignment]
@@ -154,7 +166,7 @@ def set_base(path: str) -> None:
     global BASE_BASE, BASE_SHARE, BASE_NOTE
     BASE_BASE = Path(path)
     BASE_SHARE = Path(path).joinpath("share")
-    BASE_NOTE = Path(path).joinpath("note")
+    BASE_NOTE = Path(path).joinpath("note-v2")
     os.makedirs(BASE_BASE, exist_ok=True)
     os.makedirs(BASE_SHARE, exist_ok=True)
     os.makedirs(BASE_NOTE, exist_ok=True)
@@ -174,7 +186,6 @@ def _secure_path(input: str, make: bool = True):
     
     return Path(path)
 
-from datetime import datetime
 
 
 def get_time():
@@ -182,9 +193,6 @@ def get_time():
     Provides the user's local time and other time-related information.
     """
     return datetime.now().astimezone()
-
-import subprocess
-from pathlib import Path
 
 
 def execute(commande: str):
@@ -211,14 +219,18 @@ def execute(commande: str):
 
 
 
-import paramiko
 
-ssh_objet: paramiko.SSHClient | None = None
+
+# pyrefly: ignore [unknown-name]
+ssh_objet: paramiko.SSHClient | None = None  # noqa: F821
 
 def ssh_login(ip: str, port: int, username: str, password: str, key_filename: str|None = None):
     """
     Creates a persistent SSH connection.
     """
+    # pyrefly: ignore [missing-import]
+    import paramiko
+    
     global ssh_objet
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -304,14 +316,6 @@ def notify(title: str, message: str):
     notification.message = message
     notification.send()
     return True
-
-import platform
-
-import cpuinfo
-import distro
-import psutil
-from screeninfo import get_monitors
-
 
 def system():
     """
@@ -457,13 +461,9 @@ def fetch_url_raw_v1(url: str, proxy: str|None = None):
 
 import secrets
 
-import docker
-import docker.errors
-import docker.models.containers
-import docker.types
-
 DOCKER_CONTAINER_MAX:int = 1
-DOCKER_CONTAINER_LIST:list[docker.models.containers.Container] = []
+# pyrefly: ignore [unknown-name]
+DOCKER_CONTAINER_LIST:list[docker.models.containers.Container] = []  # noqa: F821
 DOCKER_CONTAINER_PULL: bool = False
 
 
@@ -491,7 +491,18 @@ def container_start(
             - exmanples:
                         gpus=-1, gpus=[0,1]
     """
-    # global DOCKER_CONTAINER_LIST
+    # pyrefly: ignore [missing-import]
+    import docker
+    
+    # pyrefly: ignore [missing-import]
+    import docker.errors
+    
+    # pyrefly: ignore [missing-import]
+    import docker.models.containers
+    
+    # pyrefly: ignore [missing-import]
+    import docker.types
+    
     if len(DOCKER_CONTAINER_LIST) >= DOCKER_CONTAINER_MAX:
         return "Maximum number of containers reached"
     
@@ -577,6 +588,9 @@ def container_images():
     """
     Return the list of Docker images that are already pulled and available locally.
     """
+    # pyrefly: ignore [missing-import]
+    import docker
+    
     client = None
     try:
         client = docker.from_env()
@@ -701,12 +715,10 @@ def TTS_generator(input: str, outputPath: str) -> str:
     
     return f"file in hote disk : {file}"
 
-from typing import TYPE_CHECKING
-
 if TYPE_CHECKING:
     from enboite.lib import llm
 
-SESSION_LLM: "None | llm.client" = None
+SESSION_LLM: None | llm.client = None
 
 def unload_llm() -> None:
     """
@@ -728,11 +740,6 @@ def container_stop_all() -> None:
 
 
 # ==== FS ==== start
-import datetime as dt
-import shutil
-
-import humanize
-
 
 def mkdir(path: str) -> str:
     """
@@ -921,10 +928,6 @@ def FS_request_host_access():
 
 # ==== FS ==== end
 
-import subprocess  # noqa: F811
-import sys
-
-
 def execute_python(code: str, timeout: int = 60, writeoutput: bool = False) -> dict|str:
     """
     Exécute du code Python dans un sous-processus.
@@ -1012,17 +1015,15 @@ def note_new(title: str, content: str) -> str:
     with open(counter_file, "r") as f:
         ID = int(_secure_ID(f.read()))
     
-    with open(os.path.join(str(BASE_NOTE), f"{ID}.title.txt"), "w", encoding="utf-8") as f:
-        f.write(title)
-    
-    with open(os.path.join(str(BASE_NOTE), f"{ID}.content.txt"), "w", encoding="utf-8") as f:
-        f.write(content)
+    with open(os.path.join(str(BASE_NOTE), f"{ID}.json"), "w", encoding="utf-8") as f:
+        f.write(json.dumps({"title": title, "content": content}))
     
     with open(os.path.join(str(BASE_NOTE), f"{ID}.active"), "w", encoding="utf-8") as f:
         f.write("0")
     
     with open(counter_file, "w") as f:
         f.write(str(ID+1))
+    
     return str(ID)
 
 def note_all() -> str:
@@ -1030,13 +1031,13 @@ def note_all() -> str:
     
     results: list[str] = []
     for note in Path(BASE_NOTE).glob("*.active"):
-        results.append(f"ID: {note.stem}\nTitle: {open(os.path.join(BASE_NOTE, f"{note.stem}.title.txt"), "r", encoding="utf-8").read()}")  # noqa: SIM115
+        results.append(f"ID: {note.stem}\nTitle: {json.loads(open(os.path.join(BASE_NOTE, f"{note.stem}.json"), "r", encoding="utf-8").read())["title"]}")  # noqa: SIM115
     
     return "\n".join(results).strip()
 
 def note_read(ID: str) -> str:
     "Returns the content of a note."
-    return open(os.path.join(BASE_NOTE, f"{_secure_ID(ID)}.content.txt"), "r", encoding="utf-8").read()
+    return json.loads(open(os.path.join(BASE_NOTE, f"{_secure_ID(ID)}.json"), "r", encoding="utf-8").read())["content"]
 
 def note_rm(ID: str) -> None:
     """

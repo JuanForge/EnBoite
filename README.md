@@ -16,5 +16,8 @@ pip install .[full]
 pip install .
 ```
 
+# models
+**Highly recommended model: 'qwen3.6:35b-a3b'**
+
 # Python
 Python 3.12.3

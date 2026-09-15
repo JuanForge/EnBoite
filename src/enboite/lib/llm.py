@@ -40,7 +40,7 @@ class client:
         endpoint: str = "http://127.0.0.1:11434",
         proxy: str|None = None,
         timeout: None|int = None,
-        printError: bool = False
+        printError: bool = True
     ) -> None:
         self.model = model
         self.think = think

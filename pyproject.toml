@@ -17,7 +17,6 @@ dependencies = [
     "requests",
     "requests[socks]",
     "rich",
-    "paramiko",
     "psutil", # non permit sur android
     "ddgs",
     "pydantic",
@@ -30,6 +29,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+ssh = [
+    "paramiko"
+]
 full = [
     "sounddevice",
     "soundfile",
@@ -37,7 +39,8 @@ full = [
     "docker",
     "geoip2",
     "notify-py",
-    "mss"
+    "mss",
+    "enboite[ssh]"
 ]
 dev = [
     "types-docker",

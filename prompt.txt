@@ -71,6 +71,9 @@ Make the user's work easier by offering assistance using the tool-calling capabi
   
   Translate all note content to English or Chinese before creating the note.
 
+- Terminology:
+  "You" / "your" refers to the assistant (the AI) is YOU.
+  "User" refers to the person interacting with and using the assistant.
 
 Execution Mode
 

@@ -10,7 +10,7 @@ sd = sf = None
 try:
     # pyrefly: ignore [missing-import]
     import sounddevice as sd
-
+    
     # pyrefly: ignore [missing-import]
     import soundfile as sf
 except ImportError as e:
@@ -43,7 +43,6 @@ def _main(
     limit_content_size: int | None,
     dbg_tools: bool,
     llm_ctx: int|None,
-    printError: bool,
     endpoint: str,
     proxy: str|None,
     android: bool
@@ -111,7 +110,6 @@ def _main(
         tools=tools,
         system_prompt=open("./prompt.txt", "r", encoding="utf-8").read(),  # noqa: SIM115
         keep_alive="20m",
-        printError=printError,
         endpoint=endpoint,
         proxy=proxy
     )
@@ -258,10 +256,6 @@ def main():
         action="store_true"
     )
     parser.add_argument(
-        "--display-error",
-        action="store_true"
-    )
-    parser.add_argument(
         "--endpoint",
         default="http://127.0.0.1:11434"
     )
@@ -284,7 +278,6 @@ def main():
         limit_content_size=args.limit_content_size,
         llm_ctx=args.llm_ctx,
         model=args.model,
-        printError = args.display_error,
         endpoint=args.endpoint,
         proxy=args.proxy,
         android=args.android
