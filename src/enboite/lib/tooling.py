@@ -993,20 +993,26 @@ def _secure_ID(ID: str) -> str:
             raise RuntimeError("invalide ID")
     return ID
 
-def note_new(title: str, content: str) -> str:
+def note_new(title: str, content: str, CompressAndLanguage:bool = False) -> str:
     """
-    Creates a new note.
+    Creates a new note for the agent ( you ).
     
     title:
-    A short but descriptive title that summarizes the note's content.
-    Adjust the title length to the complexity of the content so that
-    it remains concise without losing important information.
+      A short but descriptive title that summarizes the note's content.
+      Adjust the title length to the complexity of the content so that
+      it remains concise without losing important information.
     content:
-    The content of the note.
+      The content of the note.
+    
+    By using `CompressAndLanguage`, you guarantee that the content is written in the language requested by the prompt
+      and that the content of the note is compressed by you in order to consume the fewest characters/tokens.
     
     Returns:
     The ID of the created note.
-    """
+    """ # without any loss of information.
+    if not CompressAndLanguage:
+        raise RuntimeError("CompressAndLanguage must be set to True.")
+    
     counter_file = Path(os.path.join(BASE_NOTE, "counter.ini"))
     if not counter_file.exists():
         counter_file.write_text("0", encoding="utf-8")
@@ -1015,7 +1021,7 @@ def note_new(title: str, content: str) -> str:
         ID = int(_secure_ID(f.read()))
     
     with open(os.path.join(str(BASE_NOTE), f"{ID}.json"), "w", encoding="utf-8") as f:
-        f.write(json.dumps({"title": title, "content": content}))
+        f.write(json.dumps({"title": title, "datetime": datetime.now(dt.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"), "content": content}))
     
     with open(os.path.join(str(BASE_NOTE), f"{ID}.active"), "w", encoding="utf-8") as f:
         f.write("0")
@@ -1030,7 +1036,8 @@ def note_all() -> str:
     
     results: list[str] = []
     for note in Path(BASE_NOTE).glob("*.active"):
-        results.append(f"ID: {note.stem}\nTitle: {json.loads(open(os.path.join(BASE_NOTE, f"{note.stem}.json"), "r", encoding="utf-8").read())["title"]}")  # noqa: SIM115
+        data = json.loads(open(os.path.join(BASE_NOTE, f"{note.stem}.json"), "r", encoding="utf-8").read())  # noqa: SIM115
+        results.append(f"ID: {note.stem}\nTitle: {data["title"]}\nDatetime: {data["datetime"]}")
     
     return "\n".join(results).strip()
 

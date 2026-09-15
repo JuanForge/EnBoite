@@ -210,7 +210,7 @@ class client:
                 except Exception as e:  # noqa: BLE001
                     tool_result = f"Tool '{name}' failed: {type(e).__name__}: {e}"
                     if self.printError:
-                        print(tool_result)
+                        print(f"\033[41m{tool_result}\033[0m")
                 
                 images = None
                 if type(tool_result) is dict and tool_result['type'] == "images":
