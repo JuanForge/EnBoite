@@ -52,7 +52,6 @@ def _main(
     android: bool
 ):
     
-    
     t.DOCKER_CONTAINER_MAX = 1
     
     if android:
@@ -84,6 +83,8 @@ def _main(
         t.get_ip,
         t.get_geo_ip,
         t.search_web,
+        t.search_web_v2,
+        t.download,
         t.fetch_url_v1,
         t.ssh_tranfer_client2hote,
         t.ssh_tranfer_hote2client,
@@ -142,7 +143,7 @@ def _main(
             live = Live(
                 "",
                 console=rich_console,
-                refresh_per_second=10
+                refresh_per_second=5
             )
             live.start()
             t.LIVE = live
@@ -170,7 +171,7 @@ def _main(
                             tools_data += f'function : {chunk["function"]}\n'
                             tools_data = tools_data[-_max_size_tools:]
                         
-                        elif chunk["type"] == "done":
+                        elif chunk["type"] in ("done", "refresh"):
                             pass
                         
                         else:
@@ -198,6 +199,8 @@ def _main(
                                 Text(tools_data, style="bold cyan"),
                                 Markdown(content),
                                 "\n" + bar_io.getvalue().split("\r")[-1].strip(),
+                                #f"tokenization left : {len(session.messages[-1].get("content", 0)) * session.estimation_tokenization_factor:.64f}"
+                                f"character spike : {session.spike_char}"
                             )
                         )
                     

@@ -1,14 +1,18 @@
 from __future__ import annotations
 
+import base64
 import datetime as dt
 import inspect
 import json
 import os
 import platform
+import secrets
 import shutil
+import socket
 import subprocess
 import sys
 from datetime import datetime
+from io import BytesIO
 from pathlib import Path
 from pprint import pprint  # noqa: F401
 from typing import TYPE_CHECKING, Any, get_args
@@ -16,9 +20,14 @@ from typing import TYPE_CHECKING, Any, get_args
 import cpuinfo
 import distro
 import humanize
+import requests
+from ddgs import DDGS
+from PIL import Image
 from pydantic import TypeAdapter
 from rich.live import Live as rich_Live
 from screeninfo import get_monitors
+
+from enboite.lib import TTS
 
 FS_PERMIT_HOST: bool = False
 
@@ -164,12 +173,15 @@ def set_base(path: str) -> None:
     BASE_BASE = Path(path)
     BASE_SHARE = Path(path).joinpath("share")
     BASE_NOTE = Path(path).joinpath("note-v2")
-    os.makedirs(BASE_BASE, exist_ok=True)
-    os.makedirs(BASE_SHARE, exist_ok=True)
-    os.makedirs(BASE_NOTE, exist_ok=True)
+    
+    for i in [BASE_BASE, BASE_SHARE, BASE_NOTE]:
+        os.makedirs(i, exist_ok=True)
 
 def _secure_path(input: str, make: bool = False):
-    """RAISE"""
+    """
+    RAISE
+    ONLY FILE FOR MAKE
+    """
     _input = Path(input)
     if _input.is_absolute():
         raise ValueError("Absolute path prohibited")
@@ -215,9 +227,6 @@ def execute(commande: str):
         return "The user refused the execution request."
 
 
-
-
-
 # pyrefly: ignore [unknown-name]
 ssh_objet: paramiko.SSHClient | None = None  # noqa: F821
 
@@ -246,8 +255,7 @@ def ssh_commande(commande: str, timeout: int = 20):
     """
     Executes the specified command on the SSH session previously created by ssh_login.
     - timeout:
-               Maximum timeout: 300 seconds
-               Default timeout: 20 seconds
+        Default: 20 seconds, max: 300 seconds
     """
     if ssh_objet is None:
         return "No SSH connection was created beforehand; use 'ssh_login'."
@@ -307,12 +315,13 @@ def notify(title: str, message: str):
     """
     # pyrefly: ignore [missing-import]
     from notifypy import Notify
-
+    
     notification = Notify()
     notification.title = title
     notification.message = message
     notification.send()
     return True
+
 
 def system():
     """
@@ -360,11 +369,6 @@ def system():
     return _.result
 
 
-import socket
-
-import requests
-
-
 def get_ip():
     """
     permet d'avoir l'ip local utilisé pour les connexion, et l'ip publique
@@ -404,8 +408,8 @@ def get_geo_ip(ip: str):
         _("longitude: ", response.location.longitude)
         return _.result
 
-from ddgs import DDGS
 
+# ==== WEB ==== start
 
 def search_web(query: str, max_results: int = 5):
     """
@@ -426,6 +430,76 @@ def search_web(query: str, max_results: int = 5):
         for r in DDGS().text(query, max_results=max(1, min(max_result, max_results)))
     )
 
+def search_web_v2(
+    query: str,
+    results: int = 5,
+    type: str = "text",
+    raw: bool = False
+) -> str:
+    """
+    Preferred version.
+    
+    - query:
+        Rerche
+    - results:
+        Nombre max de résultat, default: 5, max: 20
+    - type:
+        type resésultat, permit : text, news, videos, books, images. default: text
+    - raw:
+        Returns a dict, useful when the default format is unsuitable.
+    """
+    max_result = 20
+    
+    if not type in ["text", "news", "videos", "books", "images"]:
+        raise ValueError("type inconnue")
+    
+    d = getattr(DDGS(), type)(
+        query,
+        max_results=max(1, min(max_result, results))
+    )
+    
+    if raw:
+        return str(d)
+    else:
+        return "".join(f'"{key}": "{value}"\n' for entry in d for key, value in entry.items())
+
+def download(
+    url: str,
+    path: str,
+    userAgent: str = "Mozilla/5.0"
+) -> str:
+    """
+    Télécharge une ressource depuis une URL et la sauvegarde localement, quel que soit son type.
+    
+    - url:
+        url qui permet le get
+    - path:
+        fichier au quelle save les donnée
+    - userAgent:
+        Specific User-Agent: do not set one without a reason.
+    """
+    _path = _secure_path(path)
+    
+    response = requests.get(
+        url,
+        stream=True,
+        timeout=30,
+        headers={"User-Agent": userAgent},
+    )
+    
+    response.raise_for_status()
+    
+    with open(_path, "wb") as f:
+        for chunk in response.iter_content(chunk_size=1024 * 1024):
+            if chunk:
+                f.write(chunk)
+    
+    return str({
+        "path": str(_path),
+        "url": response.url,
+        "content_type": response.headers.get("Content-Type"),
+        "size": _path.stat().st_size,
+    })
 
 def fetch_url_v1(url: str):
     """
@@ -458,13 +532,13 @@ def fetch_url_raw_v1(url: str, proxy: str|None = None):
     # pyrefly: ignore [bad-argument-type]
     return requests.get(url, **kwargs).text
 
-import secrets
+# ==== WEB ==== end
+
 
 DOCKER_CONTAINER_MAX:int = 1
 # pyrefly: ignore [unknown-name]
 DOCKER_CONTAINER_LIST:list[docker.models.containers.Container] = []  # noqa: F821
 DOCKER_CONTAINER_PULL: bool = False
-
 
 def container_start(
     image: str|None = None,
@@ -583,6 +657,13 @@ def container_start(
         if client:
             client.close()
 
+def container_stop_all() -> None:
+    """
+    Permet de supprimer/stopper tous les container temporairer créer par vous
+    """
+    for container in DOCKER_CONTAINER_LIST:
+        container.stop(timeout=1)
+
 def container_images():
     """
     Return the list of Docker images that are already pulled and available locally.
@@ -600,11 +681,6 @@ def container_images():
     finally:
         if client:
             client.close()
-
-import base64
-from io import BytesIO
-
-from PIL import Image
 
 
 def screenshot(monitors_index: list[int]) -> dict[str, list[str] | str]:
@@ -627,11 +703,21 @@ def screenshot(monitors_index: list[int]) -> dict[str, list[str] | str]:
         results.append(base64.b64encode(buffer.getvalue()).decode("ascii"))
     return {"type": "images", "value": results}
 
-def read_media(file: str, host: bool = False):
+
+def read_media(
+    file: str,
+    host: bool = False,
+    quality: int = 80
+):
     """
     Allows the LLM to receive and visually analyze an image.
     The image is directly added to the conversation so that you can see and understand its content.
     Supported formats: JPG, JPEG, PNG. Other formats may work but are not guaranteed.
+    
+    - quality:
+        Compress the image by the specified percentage before sending it to reduce I/O and token costs.
+        Do not modify it without reason.
+        Lower percentage = more compression.
     """
     if not host:
         _path = _secure_path(file)
@@ -643,10 +729,20 @@ def read_media(file: str, host: bool = False):
     if not os.path.isfile(_path):
         return 'no found the spécied input file path'
     
+    if quality:
+        with Image.open(_path) as img:
+            buffer = BytesIO()
+            img.convert("RGB").save(buffer, format="JPEG", quality=80, optimize=True)
+            image = buffer.getvalue()
+    else:
+        with open(_path, "rb") as f:
+            image = f.read()
+    
+    with open(_secure_path(os.path.join("temp", f"{secrets.token_hex()}.jpeg"), make=True), "wb") as f:
+        f.write(image)
+    
     with open(_path, "rb") as f:
-        return {"type": "images", "value": [base64.b64encode(f.read()).decode("ascii")]}
-
-from enboite.lib import TTS
+        return {"type": "images", "value": [base64.b64encode(image).decode("ascii")]}
 
 
 def TTS_make_pt(input: str, ref: str = "", ref_file: str = "", x_vector_only: bool = False) -> str:
@@ -730,13 +826,6 @@ def unload_llm() -> None:
     else:
         raise RuntimeError("SESSION_LLM not set:653")
 
-def container_stop_all() -> None:
-    """
-    Permet de supprimer/stopper tous les container temporairer créer par vous
-    """
-    for container in DOCKER_CONTAINER_LIST:
-        container.stop(timeout=1)
-
 
 # ==== FS ==== start
 
@@ -750,7 +839,10 @@ def FS_mkdir(path: str) -> str:
     os.makedirs(target, exist_ok=True)
     return f"Directory created: {target}"
 
-def FS_file_info(path: str, host: bool) -> dict:
+def FS_file_info(
+    path: str,
+    host: bool = False
+) -> str:
     """
     Returns metadata about a file (size, creation time, modification time, etc.)
     The path is relative to the shared base directory.
@@ -766,7 +858,7 @@ def FS_file_info(path: str, host: bool) -> dict:
         raise FileNotFoundError(f"File not found: {path}")
     
     stat = _path.stat()
-    return {
+    return str({
         "name": _path.name,
         "path": str(_path),
         "size_bytes": stat.st_size,
@@ -775,7 +867,7 @@ def FS_file_info(path: str, host: bool) -> dict:
         "st_mtime": dt.datetime.fromtimestamp(stat.st_mtime, tz=dt.UTC).isoformat(),
         "is_file": _path.is_file(),
         "is_dir": _path.is_dir()
-    }
+    })
 
 def FS_file_write(file: str, content: str, mode: str = "w") -> str:
     """
@@ -838,6 +930,8 @@ def FS_ls(
     Lists all items contained in the specified directory.
     Takes only directories, not files.
     
+    Returns three keys: type, Directory item or file size, name.
+    
     F = file
     D = directory
     """
@@ -850,14 +944,17 @@ def FS_ls(
     
     results: list[str] = []
     for i in list(Path(_path).glob("*")):
+        num = 0
         if i.is_dir():
             t = "D"
+            num = sum(1 for _ in os.scandir(i))
         elif i.is_file():
             t = "F"
+            num = humanize.naturalsize(i.stat().st_size, binary=True)
         else:
             t = "unknown"
         
-        results.append(f"{t} {i.relative_to(str(_path))}")
+        results.append(f"{t} {num if num else ' '} '{i.relative_to(str(_path))}'".strip())
     
     return "\n".join(results).strip()
 

@@ -66,6 +66,9 @@ class client:
                     "https": f"socks5h://{proxy}"
                 }
             )
+        self.estimation_tokenization_factor: float = 0
+        self.last_time_add = 0.0
+        self.spike_char = 0
     
     def clear(self):
         self.messages = []
@@ -101,7 +104,7 @@ class client:
             for key, value in i.items():
                 print(f"{key} > {str(value)[:100]}")
     
-    def get(self, message: str|None = None):
+    def _get(self, message: str|None = None):
         response = self.http.post(
             f"{self.endpoint}/api/chat",
             json={
@@ -120,18 +123,21 @@ class client:
         )
         return response
     
-    def generate_raw(self, content: str) -> Generator[dict]:
-        if content != "":
+    def generate_raw(self, msg: str) -> Generator[dict]:
+        if msg != "":
             self.messages.append(
                 {
                     "role": "user",
-                    "content": content,
+                    "content": msg,
                 }
             )
+        self.last_time_add = time.monotonic()
+        self.spike_char = max(len(self.messages[-1]["content"]), self.spike_char)
+        yield {"type": "refresh"}
+        # start_time = time.monotonic()
+        # print(f"tokenization left : {len(self.messages[-1].get("content", 0)) * self.estimation_tokenization_factor}")
         
-        del content
-        
-        response = self.get()
+        response = self._get()
         
         if response.status_code != 200:
             print(self.debug_chat())
@@ -142,10 +148,22 @@ class client:
         
         self.messages.append({"role": "assistant", "content": ""})
         
+        # first = True
         for line in response.iter_lines(chunk_size=1):
             line: bytes
             if not line:
                 continue
+            
+            # if first:
+            #     print("end factor")
+            #     _token = 0
+            #     for i in reversed(self.messages):
+            #         if i["role"] in ("user", "assistant"):
+            #             _token += len(i["content"])
+            #         else:
+            #             break
+            #     self.estimation_tokenization_factor = (time.monotonic() - start_time) / max(1, _token)
+            #     first = False
             
             data = orjson.loads(line)
             message = data.get("message", {})
@@ -175,12 +193,6 @@ class client:
                 yield {"type": "done"}
                 break
         
-        # self.messages.append({
-        #     "role": "assistant",
-        #     "content": content,
-        #     **({"tool_calls": tool_calls} if tool_calls else {})
-        # })
-        
         yield {"type": "tool_calls", "content": self.messages[-1].get("tool_calls", [])}
         return None
     
@@ -190,7 +202,7 @@ class client:
             stream = self.generate_raw(content)
             content = ""
             for chunk in stream:
-                if chunk["type"] in ["thinking", "content", "tool", "done"]:
+                if chunk["type"] in ["thinking", "content", "tool", "done", "refresh"]:
                     yield chunk
                 elif chunk["type"] == "tool_calls":
                     tool_calls.extend(chunk["content"])
@@ -218,6 +230,9 @@ class client:
                     if self.printError:
                         print(f"\033[41m{tool_result}\033[0m")
                 
+                if type(tool_result) != str:
+                    print(f"\033[33m{function['name']}: return a type : {type(tool_result)}\033[0m")
+                
                 images = None
                 if type(tool_result) is dict and tool_result['type'] == "images":
                     images = tool_result["value"]
@@ -242,7 +257,7 @@ class client:
             i+= 0.5
             print("unload...")
             print(f"...({i}s)")
-            self.get("Do not respond at all.")
+            self._get("Do not respond at all.")
             time.sleep(i)
         print("ok")
         self.think = think_old
