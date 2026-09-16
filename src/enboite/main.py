@@ -213,6 +213,8 @@ def _main(
             elif _input == "/clear":
                 session.clear()
                 session.total_token = 0
+                with open(save_chat_file, "wb") as f:
+                    f.write(session.export())
             live.stop()
             if prompt:
                 sys.exit(0)

@@ -750,26 +750,31 @@ def FS_mkdir(path: str) -> str:
     os.makedirs(target, exist_ok=True)
     return f"Directory created: {target}"
 
-def FS_file_info(path: str) -> dict:
+def FS_file_info(path: str, host: bool) -> dict:
     """
     Returns metadata about a file (size, creation time, modification time, etc.)
     The path is relative to the shared base directory.
     """
-    target = _secure_path(path, make=False)
+    if not host:
+        _path = _secure_path(path, make=False)
+    elif FS_PERMIT_HOST:
+        _path = Path(path)
+    else:
+        raise _client.FS.HostAccessDeniedError()
     
-    if not target.exists():
+    if not _path.exists():
         raise FileNotFoundError(f"File not found: {path}")
     
-    stat = target.stat()
+    stat = _path.stat()
     return {
-        "name": target.name,
-        "path": str(target),
+        "name": _path.name,
+        "path": str(_path),
         "size_bytes": stat.st_size,
         "size_human": humanize.naturalsize(stat.st_size, binary=True),
         "st_ctime": dt.datetime.fromtimestamp(stat.st_ctime, tz=dt.UTC).isoformat(),
         "st_mtime": dt.datetime.fromtimestamp(stat.st_mtime, tz=dt.UTC).isoformat(),
-        "is_file": target.is_file(),
-        "is_dir": target.is_dir()
+        "is_file": _path.is_file(),
+        "is_dir": _path.is_dir()
     }
 
 def FS_file_write(file: str, content: str, mode: str = "w") -> str:
