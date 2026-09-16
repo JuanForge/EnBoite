@@ -82,7 +82,7 @@ def _main(
         t.system,
         t.get_ip,
         t.get_geo_ip,
-        t.search_web,
+        #t.search_web,
         t.search_web_v2,
         t.download,
         t.fetch_url_v1,

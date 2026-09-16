@@ -24,6 +24,7 @@ dependencies = [
     "distro",
     "screeninfo",
     "pillow",
+    "opencv-python-headless", "numpy",
     "humanize"
 ]
 

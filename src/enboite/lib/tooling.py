@@ -4,6 +4,7 @@ import base64
 import datetime as dt
 import inspect
 import json
+import math
 import os
 import platform
 import secrets
@@ -437,14 +438,13 @@ def search_web_v2(
     raw: bool = False
 ) -> str:
     """
-    Preferred version.
-    
     - query:
         Rerche
     - results:
         Nombre max de résultat, default: 5, max: 20
     - type:
         type resésultat, permit : text, news, videos, books, images. default: text
+        Make sure to properly define the type for optimal search results.
     - raw:
         Returns a dict, useful when the default format is unsuitable.
     """
@@ -707,7 +707,8 @@ def screenshot(monitors_index: list[int]) -> dict[str, list[str] | str]:
 def read_media(
     file: str,
     host: bool = False,
-    quality: int = 80
+    quality: int = 60,
+    resolution: int = 720
 ):
     """
     Allows the LLM to receive and visually analyze an image.
@@ -718,7 +719,15 @@ def read_media(
         Compress the image by the specified percentage before sending it to reduce I/O and token costs.
         Do not modify it without reason.
         Lower percentage = more compression.
-    """
+        0 = raw image
+    - resolution:
+        Same as -quality, but specifies a resolution of your choice.
+        Do not modify it without reason.
+        - example: 720, 1080
+    """    
+    import cv2
+    import numpy as np
+    
     if not host:
         _path = _secure_path(file)
     elif FS_PERMIT_HOST:
@@ -732,13 +741,46 @@ def read_media(
     if quality:
         with Image.open(_path) as img:
             buffer = BytesIO()
-            img.convert("RGB").save(buffer, format="JPEG", quality=80, optimize=True)
+            img.convert("RGB").save(buffer, format="JPEG", quality=quality, optimize=True)
             image = buffer.getvalue()
     else:
         with open(_path, "rb") as f:
             image = f.read()
     
-    with open(_secure_path(os.path.join("temp", f"{secrets.token_hex()}.jpeg"), make=True), "wb") as f:
+    if resolution != 0:
+        img = cv2.imdecode(
+            np.frombuffer(image, np.uint8),
+            cv2.IMREAD_COLOR
+        )
+        
+        if img is None:
+            raise ValueError("Failed to decode image")
+        
+        height, width = img.shape[:2]
+        
+        scale = resolution / math.sqrt(width * height)
+        
+        new_width = round(width * scale)
+        new_height = round(height * scale)
+        
+        img = cv2.resize(
+            img,
+            (new_width, new_height),
+            interpolation=cv2.INTER_AREA
+        )
+        
+        success, encoded = cv2.imencode(
+            ".jpg",
+            img,
+            [cv2.IMWRITE_JPEG_QUALITY, quality]
+        )
+        
+        if not success:
+            raise ValueError("Failed to encode image")
+        
+        image = encoded.tobytes()
+    
+    with open(_secure_path(os.path.join("temp", f"{secrets.token_hex()}.{resolution}p.jpeg"), make=True), "wb") as f:
         f.write(image)
     
     with open(_path, "rb") as f:
