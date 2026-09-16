@@ -168,7 +168,7 @@ def set_base(path: str) -> None:
     os.makedirs(BASE_SHARE, exist_ok=True)
     os.makedirs(BASE_NOTE, exist_ok=True)
 
-def _secure_path(input: str, make: bool = True):
+def _secure_path(input: str, make: bool = False):
     """RAISE"""
     _input = Path(input)
     if _input.is_absolute():
@@ -264,7 +264,7 @@ def ssh_tranfer_client2hote(file_source: str, file_hote: str):
     if ssh_objet is None:
         return "No SSH connection was created beforehand."
     
-    file = _secure_path(file_hote)
+    file = _secure_path(file_hote, True)
     
     ssh_objet.open_sftp().get(
         file_source,
@@ -707,7 +707,7 @@ def TTS_generator(input: str, outputPath: str) -> str:
     
     A VRAM OOM is very likely to occur. Consider using an unload if available.
     """
-    file = _secure_path(outputPath)
+    file = _secure_path(outputPath, make=True)
     
     with open(file, "wb") as f:
         f.write(TTS.TTSgen(input))

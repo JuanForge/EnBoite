@@ -34,6 +34,10 @@ def speaker(content: bytes) -> None:
         sd.play(audio, sample_rate)
         sd.wait()
 
+def _prompt(x: list[str]) -> str:
+    return "".join([line for line in x if not line.lstrip().startswith("#")])
+
+
 
 def _main(
     model: str|None,
@@ -109,7 +113,7 @@ def _main(
         think=thinking,
         num_ctx=llm_ctx,
         tools=tools,
-        system_prompt=open("./prompt.txt", "r", encoding="utf-8").read(),  # noqa: SIM115
+        system_prompt=_prompt(open("./prompt.md", "r", encoding="utf-8").readlines()),  # noqa: SIM115
         keep_alive="20m",
         endpoint=endpoint,
         proxy=proxy
