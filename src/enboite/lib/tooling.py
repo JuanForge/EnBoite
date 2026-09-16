@@ -740,7 +740,7 @@ def container_stop_all() -> None:
 
 # ==== FS ==== start
 
-def mkdir(path: str) -> str:
+def FS_mkdir(path: str) -> str:
     """
     Creates a directory (and parent directories if needed).
     The path is relative to the shared base directory.
@@ -750,7 +750,7 @@ def mkdir(path: str) -> str:
     os.makedirs(target, exist_ok=True)
     return f"Directory created: {target}"
 
-def file_info(path: str) -> dict:
+def FS_file_info(path: str) -> dict:
     """
     Returns metadata about a file (size, creation time, modification time, etc.)
     The path is relative to the shared base directory.
@@ -772,7 +772,7 @@ def file_info(path: str) -> dict:
         "is_dir": target.is_dir()
     }
 
-def file_write(file: str, content: str, mode: str = "w") -> str:
+def FS_file_write(file: str, content: str, mode: str = "w") -> str:
     """
     Writes text content to a file. Creates the file if it doesn't exist.
     For appending content, use mode='a'. The path is relative to the shared base.
@@ -782,7 +782,7 @@ def file_write(file: str, content: str, mode: str = "w") -> str:
         f.write(content)
     return f"Content written to {target} ({len(content)} bytes)"
 
-def file_delete(path: str) -> str:
+def FS_file_delete(path: str) -> str:
     """
     Deletes a file from the shared directory.
     The path is relative to the shared base directory.
@@ -796,7 +796,7 @@ def file_delete(path: str) -> str:
     target.unlink()
     return f"Deleted: {target}"
 
-def file_move(source: str, destination: str) -> str:
+def FS_file_move(source: str, destination: str) -> str:
     """
     Moves a file from source to destination within the shared directory.
     Paths are relative to the shared base directory.
@@ -810,7 +810,7 @@ def file_move(source: str, destination: str) -> str:
     shutil.move(str(src), str(dst))
     return f"Moved from {source} to {destination}"
 
-def file_copy(source: str, destination: str) -> str:
+def FS_file_copy(source: str, destination: str) -> str:
     """
     Copies a file from source to destination within the shared directory.
     Paths are relative to the shared base directory.
@@ -825,7 +825,7 @@ def file_copy(source: str, destination: str) -> str:
     return f"Copied from {source} to {destination}"
 
 
-def ls(
+def FS_ls(
     path: str,
     host: bool = False
 ) -> str:
@@ -856,7 +856,7 @@ def ls(
     
     return "\n".join(results).strip()
 
-def cat(
+def FS_cat(
     file: str,
     host: bool,
     start: int = 0,
@@ -903,7 +903,7 @@ def cat(
     
     return f"#Header by the tool: content: {start}-{end}: file: '{_file}'\n{content}"
 
-def pwd(host: bool = False) -> str:
+def FS_pwd(host: bool = False) -> str:
     """
     Returns the absolute path of the current directory.
     
