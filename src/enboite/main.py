@@ -195,6 +195,10 @@ def _main(
                                 "\n" + bar_io.getvalue().split("\r")[-1].strip(),
                             )
                         )
+                    
+                    if save_chat:
+                        with open(save_chat_file, "wb") as f:
+                            f.write(session.export())
                 except KeyboardInterrupt:
                     pass
             elif _input == "/log":
@@ -210,9 +214,6 @@ def _main(
     except KeyboardInterrupt:
         pass
     finally:
-        if save_chat:
-            with open(save_chat_file, "wb") as f:
-                f.write(session.export())
         if live:
             live.stop()
         

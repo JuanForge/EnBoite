@@ -17,7 +17,7 @@ pip install .
 ```
 
 # models
-**Highly recommended model: 'qwen3.6:35b-a3b'**
+**Highly recommended model: ornith-1.5:35b > qwen3.6:35b-a3b**
 
 # Python
 Python 3.12.3
