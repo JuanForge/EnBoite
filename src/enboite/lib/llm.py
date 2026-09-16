@@ -139,8 +139,8 @@ class client:
             response.raise_for_status()
         
         content = ""
-        # thinking = ""
-        tool_calls = []
+        
+        self.messages.append({"role": "assistant", "content": ""})
         
         for line in response.iter_lines(chunk_size=1):
             line: bytes
@@ -151,7 +151,10 @@ class client:
             message = data.get("message", {})
             
             if chunk := message.get("content"):
+                chunk: str
+                
                 content += chunk
+                self.messages[-1]["content"] = self.messages[-1]["content"] + chunk
                 yield {"type": "content", "content": chunk}
             
             if chunk := message.get("thinking"):
@@ -160,7 +163,10 @@ class client:
             if calls := message.get("tool_calls"):
                 for i in calls:
                     yield {"type": "tool", "function": i.get("function")}
-                tool_calls.extend(calls)
+                
+                if not type(self.messages[-1].get("tool_calls")) is list:
+                    self.messages[-1]["tool_calls"] = []
+                self.messages[-1]["tool_calls"].extend(calls)
             
             if data.get("done"):
                 self.total_token = max(self.total_token, data.get("prompt_eval_count", 0) + data.get("eval_count", 0))
@@ -169,13 +175,13 @@ class client:
                 yield {"type": "done"}
                 break
         
-        self.messages.append({
-            "role": "assistant",
-            "content": content,
-            **({"tool_calls": tool_calls} if tool_calls else {})
-        })
+        # self.messages.append({
+        #     "role": "assistant",
+        #     "content": content,
+        #     **({"tool_calls": tool_calls} if tool_calls else {})
+        # })
         
-        yield {"type": "tool_calls", "content": tool_calls}
+        yield {"type": "tool_calls", "content": self.messages[-1].get("tool_calls", [])}
         return None
     
     def generate(self, content: str) -> Generator[dict]:
