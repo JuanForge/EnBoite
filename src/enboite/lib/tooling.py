@@ -168,14 +168,17 @@ BASE_BASE: Path = None
 BASE_SHARE: Path = None
 # pyrefly: ignore [bad-assignment]
 BASE_NOTE: Path = None
+# pyrefly: ignore [bad-assignment]
+BASE_TEMP: Path = None
 
 def set_base(path: str) -> None:
-    global BASE_BASE, BASE_SHARE, BASE_NOTE
+    global BASE_BASE, BASE_SHARE, BASE_NOTE, BASE_TEMP
     BASE_BASE = Path(path)
     BASE_SHARE = Path(path).joinpath("share")
     BASE_NOTE = Path(path).joinpath("note-v2")
+    BASE_TEMP = Path(path).joinpath("temp")
     
-    for i in [BASE_BASE, BASE_SHARE, BASE_NOTE]:
+    for i in [BASE_BASE, BASE_SHARE, BASE_NOTE, BASE_TEMP]:
         os.makedirs(i, exist_ok=True)
 
 def _secure_path(input: str, make: bool = False):
@@ -434,8 +437,8 @@ def search_web(query: str, max_results: int = 5):
 def search_web_v2(
     query: str,
     results: int = 5,
-    type: str = "text",
-    raw: bool = False
+    raw: bool = False,
+    type: str = "text"
 ) -> str:
     """
     - query:
@@ -443,7 +446,7 @@ def search_web_v2(
     - results:
         Nombre max de résultat, default: 5, max: 20
     - type:
-        type resésultat, permit : text, news, videos, books, images. default: text
+        type resésultat, permit : text, news, videos, books, images.
         Make sure to properly define the type for optimal search results.
     - raw:
         Returns a dict, useful when the default format is unsuitable.
@@ -780,7 +783,7 @@ def read_media(
         
         image = encoded.tobytes()
     
-    with open(_secure_path(os.path.join("temp", f"{secrets.token_hex()}.{resolution}p.jpeg"), make=True), "wb") as f:
+    with open(os.path.join(BASE_TEMP, f"{secrets.token_hex()}.{resolution}p.jpeg"), "wb") as f:
         f.write(image)
     
     with open(_path, "rb") as f:
