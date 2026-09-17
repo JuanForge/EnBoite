@@ -261,18 +261,17 @@ def ssh_commande(commande: str, timeout: int = 20):
     - timeout:
         Default: 20 seconds, max: 300 seconds
     """
+    _max = 300
+    
     if ssh_objet is None:
         return "No SSH connection was created beforehand; use 'ssh_login'."
     
-    stdin, stdout, stderr = ssh_objet.exec_command(commande, timeout=min(300, timeout))  # noqa: RUF059
+    stdin, stdout, stderr = ssh_objet.exec_command(commande, timeout=min(_max, timeout))  # noqa: RUF059
     
     return f"stdout : {stdout.read().decode()}, error : {stderr.read().decode()}, returncode : {stdout.channel.recv_exit_status()}"
 
-def ssh_tranfer_client2hote(file_source: str, file_hote: str):
-    """
-    Allows transferring a file (files only) from the SSH connection to the user's machine.
-    The tool only accepts relative file paths.
-    """
+def ssh_tranfer_download(file_source: str, file_hote: str):
+    """Copy a file from path on the SSH server to a the you workspaces"""
     if ssh_objet is None:
         return "No SSH connection was created beforehand."
     
@@ -284,10 +283,9 @@ def ssh_tranfer_client2hote(file_source: str, file_hote: str):
     )
     return f"True, file hote is : {file}"
 
-def ssh_tranfer_hote2client(file_hote: str, file_client: str) -> str:
-    """
-    copier un fichier local sur le serveur ssh
-    """
+def ssh_tranfer_upload(file_hote: str, file_client: str) -> str:
+    """Copy a file from you workspace to a path on the SSH server"""
+    
     if ssh_objet is None:
         return "No SSH connection was created beforehand."
     
@@ -557,15 +555,18 @@ def container_start(
     The container will remain running until it is explicitly stopped by command.
     Multiple containers can be created.
     
-    - image: specify the base container image,
-             leave unset to automatically select a suitable base image.
-             Only Debian-based images are supported.
-    
-    - gpus: specify the GPU IDs to attach to the container,
-            use -1 to attach all GPUs,
-            leave unset to attach no GPUs.
-            - exmanples:
-                        gpus=-1, gpus=[0,1]
+    - image:
+        specify the base container image,
+        leave unset to automatically select a suitable base image.
+        Only Debian-based images are supported.
+        Do not modify it without reason.
+    - gpus:
+        specify the GPU IDs to attach to the container,
+        use -1 to attach all GPUs,
+        leave unset to attach no GPUs.
+        Do not modify it without reason.
+        - exmanples:
+            gpus=-1, gpus=[0,1]
     """
     # pyrefly: ignore [missing-import]
     import docker
@@ -664,8 +665,9 @@ def container_stop_all() -> None:
     """
     Permet de supprimer/stopper tous les container temporairer créer par vous
     """
-    for container in DOCKER_CONTAINER_LIST:
+    for i, container in enumerate(DOCKER_CONTAINER_LIST.copy()):
         container.stop(timeout=1)
+        del DOCKER_CONTAINER_LIST[i]
 
 def container_images():
     """
@@ -739,7 +741,7 @@ def read_media(
         raise _client.FS.HostAccessDeniedError()
     
     if not os.path.isfile(_path):
-        return 'no found the spécied input file path'
+        raise FileNotFoundError("no found the input file path")
     
     if quality:
         with Image.open(_path) as img:
@@ -786,8 +788,8 @@ def read_media(
     with open(os.path.join(BASE_TEMP, f"{secrets.token_hex()}.{resolution}p.jpeg"), "wb") as f:
         f.write(image)
     
-    with open(_path, "rb") as f:
-        return {"type": "images", "value": [base64.b64encode(image).decode("ascii")]}
+    #with open(_path, "rb") as f:
+    return {"type": "images", "value": [base64.b64encode(image).decode("ascii")]}
 
 
 def TTS_make_pt(input: str, ref: str = "", ref_file: str = "", x_vector_only: bool = False) -> str:

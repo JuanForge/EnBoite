@@ -86,8 +86,8 @@ def _main(
         t.search_web_v2,
         t.download,
         t.fetch_url_v1,
-        t.ssh_tranfer_client2hote,
-        t.ssh_tranfer_hote2client,
+        t.ssh_tranfer_upload,
+        t.ssh_tranfer_download,
         t.container_start,
         t.container_images,
         t.screenshot,
@@ -200,7 +200,8 @@ def _main(
                                 Markdown(content),
                                 "\n" + bar_io.getvalue().split("\r")[-1].strip(),
                                 #f"tokenization left : {len(session.messages[-1].get("content", 0)) * session.estimation_tokenization_factor:.64f}"
-                                f"character spike : {session.spike_char}"
+                                f"character spike : {session.spike_char}",
+                                f"token/s : {session.token_per_sec}"
                             )
                         )
                     
