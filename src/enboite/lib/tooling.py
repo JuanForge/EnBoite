@@ -795,7 +795,7 @@ def read_media(
         
         image = encoded.tobytes()
     
-    with open(os.path.join(BASE_TEMP, f"{secrets.token_hex()}.{resolution}p.jpeg"), "wb") as f:
+    with open(os.path.join(BASE_TEMP, f"{datetime.now().astimezone().strftime("%Y-%m-%d_%H-%M-%S")}_{secrets.token_hex(8)}.{resolution}p.jpeg"), "wb") as f:
         f.write(image)
     
     #with open(_path, "rb") as f:
@@ -981,7 +981,8 @@ def FS_file_copy(source: str, destination: str) -> str:
 
 def FS_ls(
     path: str,
-    host: bool = False
+    host: bool = False,
+    only: list[str]|None = None
 ) -> str:
     """
     Lists all items contained in the specified directory.
@@ -991,6 +992,8 @@ def FS_ls(
     
     F = file
     D = directory
+    
+    - only: Specify an extension to only display files that have it (txt, jpg, md).
     """
     if not host:
         _path = _secure_path(path)
@@ -1001,6 +1004,9 @@ def FS_ls(
     
     results: list[str] = []
     for i in list(Path(_path).glob("*")):
+        if only and not i.suffix.replace(".", "") in only:
+            continue
+        
         num = 0
         if i.is_dir():
             t = "D"

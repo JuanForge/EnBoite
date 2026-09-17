@@ -51,8 +51,11 @@ def _main(
     llm_ctx: int|None,
     endpoint: str,
     proxy: str|None,
-    android: bool
+    android: bool,
+    prompt_file: None|str
 ):
+    if prompt_file:
+        prompt = open(prompt_file, "r", encoding="utf-8").read()  # noqa: SIM115
     
     t.DOCKER_CONTAINER_MAX = 1
     
@@ -249,6 +252,10 @@ def main():
         default=None
     )
     parser.add_argument(
+        "--prompt-file",
+        default=None
+    )
+    parser.add_argument(
         "--thinking",
         action="store_true"
     )
@@ -295,5 +302,6 @@ def main():
         model=args.model,
         endpoint=args.endpoint,
         proxy=args.proxy,
-        android=args.android
+        android=args.android,
+        prompt_file=args.prompt_file
     )
