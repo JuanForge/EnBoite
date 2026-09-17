@@ -50,6 +50,9 @@ dev = [
     "types-tqdm"
 ]
 
+[tool.setuptools.package-data]
+enboite = ["prompt.md"]
+
 [project.scripts]
 enboite = "enboite.main:main"
 

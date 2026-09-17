@@ -1,4 +1,6 @@
 import argparse
+import importlib
+import importlib.resources
 import io
 import json
 import os
@@ -115,7 +117,7 @@ def _main(
         think=thinking,
         num_ctx=llm_ctx,
         tools=tools,
-        system_prompt=_prompt(open("./prompt.md", "r", encoding="utf-8").readlines()),  # noqa: SIM115
+        system_prompt=_prompt(open(str(importlib.resources.files("enboite").joinpath("prompt.md")), "r", encoding="utf-8").readlines()),  # noqa: SIM115
         keep_alive="20m",
         endpoint=endpoint,
         proxy=proxy
