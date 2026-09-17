@@ -188,7 +188,7 @@ def _secure_path(input: str, make: bool = False):
     """
     _input = Path(input)
     if _input.is_absolute():
-        raise ValueError("Absolute path prohibited")
+        raise ValueError(f"Absolute path prohibited for {input}")
     
     path = (BASE_SHARE / _input).resolve()
     if not path.is_relative_to(BASE_SHARE):
@@ -270,32 +270,42 @@ def ssh_commande(commande: str, timeout: int = 20):
     
     return f"stdout : {stdout.read().decode()}, error : {stderr.read().decode()}, returncode : {stdout.channel.recv_exit_status()}"
 
-def ssh_tranfer_download(file_source: str, file_hote: str):
-    """Copy a file from path on the SSH server to a the you workspaces"""
+def ssh_tranfer_download(remote_file: str, dest_local: str):
+    """
+    Copy a file from path on the SSH server to a the you workspaces
+    
+    - dest_local: local destination for the copied server file
+    - remote_file: server file to copy
+    """
     if ssh_objet is None:
         return "No SSH connection was created beforehand."
     
-    file = _secure_path(file_hote, True)
+    file = _secure_path(dest_local, True)
     
     ssh_objet.open_sftp().get(
-        file_source,
+        remote_file,
         file
     )
     return f"True, file hote is : {file}"
 
-def ssh_tranfer_upload(file_hote: str, file_client: str) -> str:
-    """Copy a file from you workspace to a path on the SSH server"""
+def ssh_tranfer_upload(source_local: str, remote_file: str) -> str:
+    """
+    Copy a file from you workspace to a path on the SSH server
+    
+    - source_local: local file to upload to the server
+    - remote_file: destination path of the file on the server
+    """
     
     if ssh_objet is None:
         return "No SSH connection was created beforehand."
     
-    file = _secure_path(file_hote)
+    file = _secure_path(source_local)
     
     ssh_objet.open_sftp().put(
         file,
-        file_client
+        remote_file
     )
-    return f"True, file client is : {file_client}"
+    return f"True, file client is : {remote_file}"
 
 def ssh_close():
     """
