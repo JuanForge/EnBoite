@@ -52,12 +52,14 @@ def _main(
     endpoint: str,
     proxy: str|None,
     android: bool,
-    prompt_file: None|str
+    prompt_file: None|str,
+    non_interactive: bool
 ):
     if prompt_file:
         prompt = open(prompt_file, "r", encoding="utf-8").read()  # noqa: SIM115
     
     t.DOCKER_CONTAINER_MAX = 1
+    t.INTERACTIVE = not non_interactive
     
     if android:
         t.set_base(str((Path("/storage/emulated/0") / "Documents" / "enboite-share").resolve()))
@@ -269,9 +271,17 @@ def main():
         default=None
     )
     parser.add_argument(
-        "--llm-ctx",
+        "--ctx",
         type=int,
-        default=1024
+        default=2048
+    )
+    parser.add_argument(
+        "--non-interactive",
+        action="store_true"
+    )
+    parser.add_argument(
+        "--no-network",
+        action="store_true"
     )
     parser.add_argument(
         "--dbg-tools",
@@ -298,10 +308,11 @@ def main():
         dbg_tools=args.dbg_tools,
         thinking=args.thinking,
         limit_content_size=args.limit_content_size,
-        llm_ctx=args.llm_ctx,
+        llm_ctx=args.ctx,
         model=args.model,
         endpoint=args.endpoint,
         proxy=args.proxy,
         android=args.android,
-        prompt_file=args.prompt_file
+        prompt_file=args.prompt_file,
+        non_interactive=args.non_interactive
     )

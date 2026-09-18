@@ -31,9 +31,19 @@ from screeninfo import get_monitors
 from enboite.lib import TTS
 
 FS_PERMIT_HOST: bool = False
+INTERACTIVE: bool = True
 
 
 class _client:
+    class NonInteractiveError(Exception):
+        def __init__(self):
+            super().__init__(
+                
+                "The session is running in non-interactive mode."
+                "The tool you called requires user input, which is unavailable."
+                "Continue without user input or use another approach."
+                
+            )
     class UserRefusedError(Exception):
         def __init__(self):
             super().__init__(
@@ -139,28 +149,30 @@ class add:
 LIVE: None | rich_Live = None
 
 def _input_live(*args, y_n: bool=True, color: bool=False) -> str|bool:
-    try:
-        if LIVE:
-            LIVE.stop()
-    except Exception as e:  # noqa: BLE001
-        print(e)
-    for i in args:
-        if color: i = f"\033[48;5;22m\033[38;5;15m{i}\033[0m"
-        print(str(i).replace("\n", "\n ") +"\n")
-    
-    value = input("input requit y/n >" if y_n else "input requit >").strip()
-    
-    try:
-        if LIVE:
-            LIVE.start()
-    except Exception as e:  # noqa: BLE001
-        print(e)
-    
-    if y_n:
-        return value in ["y", "yes"]
-    
-    
-    return value
+    if INTERACTIVE:
+        try:
+            if LIVE:
+                LIVE.stop()
+        except Exception as e:  # noqa: BLE001
+            print(e)
+        for i in args:
+            if color: i = f"\033[48;5;22m\033[38;5;15m{i}\033[0m"
+            print(str(i).replace("\n", "\n ") +"\n")
+        
+        value = input("input requit y/n >" if y_n else "input requit >").strip()
+        
+        try:
+            if LIVE:
+                LIVE.start()
+        except Exception as e:  # noqa: BLE001
+            print(e)
+        
+        if y_n:
+            return value in ["y", "yes"]
+        
+        return value
+    else:
+        raise _client.NonInteractiveError()
 
 # pyrefly: ignore [bad-assignment]
 BASE_BASE: Path = None
