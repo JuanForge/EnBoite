@@ -230,7 +230,8 @@ class client:
                     tool_result = f"Tool '{name}' failed: {type(e).__name__}: {e}"
                     if self.printError:
                         print(f"\033[41m{tool_result}\033[0m")
-                print(f"tool:time::{function["name"]} : {time.monotonic() - start_time_tool}")
+                
+                print(f"tool:time::{function["name"]} : {time.monotonic() - start_time_tool:.4f}")
                 
                 if type(tool_result) != str and type(tool_result) is dict and not tool_result.get("type") in ("images",):
                     print(f"\033[33m{function['name']}: return a type : {type(tool_result)}\033[0m")

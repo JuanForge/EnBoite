@@ -734,10 +734,11 @@ def read_media(
         Compress the image by the specified percentage before sending it to reduce I/O and token costs.
         Do not modify it without reason.
         Lower percentage = more compression.
-        0 = raw image
+        0 = raw image, best quality.
     - resolution:
         Same as -quality, but specifies a resolution of your choice.
         Do not modify it without reason.
+        0 = raw image, best resolution.
         - example: 720, 1080
     """    
     import cv2
