@@ -13,7 +13,7 @@ pip install .[full]
 
 ### for lightweight or unconventional systems
 ```bash
-pip install .
+pip install --no-cache-dir .
 ```
 
 # models

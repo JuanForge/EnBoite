@@ -63,7 +63,7 @@ def loadConfig(x: str):
     else:
         table = tomlkit.table()
         for key in loadToolings():
-            if not key.startswith(("TTS", "exec", "note")):
+            if not key.startswith(("TTS", "exec")):
                 table.add(key, True)
             else:
                 table.add(key, False)
