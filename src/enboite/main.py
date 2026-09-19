@@ -6,6 +6,7 @@ import json
 import os
 import sys
 import time
+from collections.abc import Callable
 from io import BytesIO
 
 sd = sf = None
@@ -18,8 +19,10 @@ try:
 except ImportError as e:
     print(e)
 
+import inspect
 from pathlib import Path
 
+import tomlkit
 from rich.console import Console, Group
 from rich.live import Live
 from rich.markdown import Markdown
@@ -27,6 +30,7 @@ from rich.text import Text
 from tqdm import tqdm
 
 from enboite.lib import TTS, llm, tooling
+from enboite.lib import color as c
 from enboite.lib import tooling as t
 
 
@@ -38,6 +42,36 @@ def speaker(content: bytes) -> None:
 
 def _prompt(x: list[str]) -> str:
     return "".join([line for line in x if not line.lstrip().startswith("#")])
+
+# pyrefly: ignore [bad-return]
+def loadToolings() -> dict[str, Callable]:
+    functions = {}
+    
+    for name in dir(tooling):
+        func = getattr(tooling, name)
+        
+        if not name.startswith("_"):  # noqa: SIM102
+            if inspect.isfunction(func) and func.__module__ == tooling.__name__:
+                functions[name] = func
+    return functions
+
+def loadConfig(x: str):
+    conf = os.path.join(x, "config.toml")
+    if os.path.isfile(conf):
+        with open(conf, "r", encoding="utf-8") as f:
+            data = tomlkit.loads(f.read())
+    else:
+        table = tomlkit.table()
+        for key in loadToolings():
+            if not key.startswith(("TTS", "exec", "note")):
+                table.add(key, True)
+            else:
+                table.add(key, False)
+        data = tomlkit.document()
+        data["tools"] = table
+        with open(conf, "w", encoding="utf-8") as f:
+            f.write(data.as_string())
+    return data
 
 
 
@@ -53,7 +87,9 @@ def _main(
     proxy: str|None,
     android: bool,
     prompt_file: None|str,
-    non_interactive: bool
+    non_interactive: bool,
+    data_dir: None|str,
+    #config: None|str
 ):
     if prompt_file:
         prompt = open(prompt_file, "r", encoding="utf-8").read()  # noqa: SIM115
@@ -61,59 +97,33 @@ def _main(
     t.DOCKER_CONTAINER_MAX = 1
     t.INTERACTIVE = not non_interactive
     
-    if android:
-        t.set_base(str((Path("/storage/emulated/0") / "Documents" / "enboite-share").resolve()))
+    if data_dir:
+        t._set_base(data_dir)
+    elif android:
+        t._set_base(str((Path("/storage/emulated/0") / "Documents" / "enboite-share").resolve()))
     else:
-        t.set_base(str((Path.home() / "Documents" / "enboite-share" ).resolve()))
+        t._set_base(str((Path.home() / "Documents" / "enboite-share" ).resolve()))
+    
+    config = loadConfig(str(t.BASE_BASE))
+    tools: list = []
+    
+    total_tools = loadToolings()
+    print("="* 40)
+    print("==== tools ====")
+    for func_name, func in total_tools.items():
+        if func_name in config["tools"]:
+            if config["tools"][func_name]:
+                print(f"{c.GREEN}use       : {func_name}{c.RESET}")
+                tools.append(func)
+            else:
+                print(f"{c.YELLOW}not use   : {func_name} {c.RESET}")
+        else:
+            print(f"{c.RED}not found : {func_name}{c.RESET}")
+    print("="* 40)
     
     save_chat_file = os.path.join(str(t.BASE_BASE), "chat.log.bin")
     
-    tools: list = [
-        t.FS_mkdir,
-        t.FS_file_info,
-        t.FS_file_write,
-        t.FS_file_delete,
-        t.FS_file_move,
-        t.FS_file_copy,
-        t.FS_pwd,
-        t.FS_ls,
-        t.FS_cat,
-        t.FS_request_host_access,
-        
-        t.get_time,
-        # t.execute,
-        t.ssh_login,
-        t.ssh_commande,
-        t.ssh_close,
-        t.notify,
-        t.system,
-        t.get_ip,
-        t.get_geo_ip,
-        #t.search_web,
-        t.search_web_v2,
-        t.download,
-        t.fetch_url_v1,
-        t.ssh_tranfer_upload,
-        t.ssh_tranfer_download,
-        t.container_start,
-        t.container_images,
-        t.screenshot,
-        t.read_media,
-        t.fetch_url_raw_v1,
-        t.TTS_set_pt,
-        t.TTS_make_pt,
-        t.TTS_CHANGE,
-        t.TTS_generator,
-        t.unload_llm,
-        t.container_stop_all,
-        t.execute_python,
-        t.open_folder,
-        t.note_new,
-        t.note_all,
-        t.note_read,
-        t.note_rm
-    ]
-    tools = tooling.build_v2(tools)
+    tools = tooling._build_v2(tools)
     if dbg_tools:
         print(json.dumps(tools, indent=4))
     
@@ -258,6 +268,16 @@ def main():
         default=None
     )
     parser.add_argument(
+        "--data-dir",
+        default=None,
+        type=str
+    )
+    #parser.add_argument(
+    #    "--config",
+    #    default=None,
+    #    type=str
+    #)
+    parser.add_argument(
         "--thinking",
         action="store_true"
     )
@@ -314,5 +334,7 @@ def main():
         proxy=args.proxy,
         android=args.android,
         prompt_file=args.prompt_file,
-        non_interactive=args.non_interactive
+        non_interactive=args.non_interactive,
+        data_dir=args.data_dir,
+        #config=args.config
     )

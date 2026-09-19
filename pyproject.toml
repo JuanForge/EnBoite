@@ -14,10 +14,10 @@ authors = [
 ]
 
 dependencies = [
+    "tomlkit",
     "requests",
     "requests[socks]",
     "rich",
-    "ddgs",
     "pydantic",
     "tqdm",
     "py-cpuinfo",
@@ -41,7 +41,8 @@ full = [
     "notify-py",
     "mss",
     "enboite[ssh]",
-    "psutil"
+    "psutil",
+    "ddgs"
 ]
 dev = [
     "types-docker",

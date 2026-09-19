@@ -1,6 +1,6 @@
 /personal
 /temp
-/dev
+/dev-dev
 *.pdf
 /tooling.py
 GeoLite*

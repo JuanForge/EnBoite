@@ -22,7 +22,6 @@ import cpuinfo
 import distro
 import humanize
 import requests
-from ddgs import DDGS
 from PIL import Image
 from pydantic import TypeAdapter
 from rich.live import Live as rich_Live
@@ -66,7 +65,7 @@ TYPE_MAP = {
 }
 
 
-def get_json_type(python_type):
+def _get_json_type(python_type):
     if python_type in TYPE_MAP:
         return TYPE_MAP[python_type]
     
@@ -77,7 +76,7 @@ def get_json_type(python_type):
     
     raise TypeError(f"Type non supporté : {python_type}")
 
-def build(funcs):
+def _build(funcs):
     if not type(funcs) is list:
         funcs = [funcs]
     
@@ -92,7 +91,7 @@ def build(funcs):
             python_type = param.annotation
             
             properties[name] = {
-                "type": get_json_type(python_type)
+                "type": _get_json_type(python_type)
             }
             
             if param.default is inspect.Parameter.empty:
@@ -113,7 +112,7 @@ def build(funcs):
     return result
 
 
-def build_v2(funcs):
+def _build_v2(funcs):
     funcs = funcs if isinstance(funcs, list) else [funcs]
     return [
         {
@@ -183,10 +182,10 @@ BASE_NOTE: Path = None
 # pyrefly: ignore [bad-assignment]
 BASE_TEMP: Path = None
 
-def set_base(path: str) -> None:
+def _set_base(path: str) -> None:
     global BASE_BASE, BASE_SHARE, BASE_NOTE, BASE_TEMP
     BASE_BASE = Path(path)
-    BASE_SHARE = Path(path).joinpath("share")
+    BASE_SHARE = Path(path).joinpath("workspace")
     BASE_NOTE = Path(path).joinpath("note-v2")
     BASE_TEMP = Path(path).joinpath("temp")
     
@@ -220,7 +219,7 @@ def get_time():
     return datetime.now().astimezone()
 
 
-def execute(commande: str):
+def exec_shell(commande: str):
     """
     permet d'exécuter une commande dans un terminal Bash.
     Avant l'action, demander l'autorisation de l'utilisateur pour exécuter la commande.
@@ -435,7 +434,7 @@ def get_geo_ip(ip: str):
 
 # ==== WEB ==== start
 
-def search_web(query: str, max_results: int = 5):
+def search_web_v1(query: str, max_results: int = 5):
     """
     permet une recherche web,
     retourne un enssemble de réponses.
@@ -444,6 +443,7 @@ def search_web(query: str, max_results: int = 5):
     - max_results:
         spécifier le nombre de résultat. defaut 5, max 15, min 1.
     """
+    from ddgs import DDGS
     max_result = 15
     
     _ = add()
@@ -471,6 +471,7 @@ def search_web_v2(
     - raw:
         Returns a dict, useful when the default format is unsuitable.
     """
+    from ddgs import DDGS
     max_result = 20
     
     if not type in ["text", "news", "videos", "books", "images"]:
@@ -529,6 +530,7 @@ def fetch_url_v1(url: str):
     retourne le contenue d'une page.
     format : markdown
     """
+    from ddgs import DDGS
     return DDGS().extract(
         url,
         fmt="text_markdown",
@@ -1105,18 +1107,18 @@ def FS_request_host_access():
 
 # ==== FS ==== end
 
-def execute_python(code: str, timeout: int = 60, writeoutput: bool = False) -> dict|str:
+def exec_python(code: str, timeout: int = 60, writeoutput: bool = False) -> dict|str:
     """
     Exécute du code Python dans un sous-processus.
     
     - code:
-            Code Python à exécuter.
+        Code Python à exécuter.
     - timeout:
-               Délai maximal d'execution secondes (défaut 60).
-               max : 200
+        Délai maximal d'execution secondes (défaut 60).
+        max : 200
     - writeoutput:
-                   Affiche le résultat de l'execution sur la console utilisateur,
-                   A activer seulement si l'user requit de voir les sorties console.
+        Affiche le résultat de l'execution sur la console utilisateur,
+        A activer seulement si l'user requit de voir les sorties console.
     
     Returns: Dictionnaire contenant stdout, stderr, returncode.
     """
