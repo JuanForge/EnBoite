@@ -9,6 +9,9 @@ import time
 from collections.abc import Callable
 from io import BytesIO
 
+import prompt_toolkit
+import prompt_toolkit.history
+
 sd = sf = None
 try:
     # pyrefly: ignore [missing-import]
@@ -152,9 +155,10 @@ def _main(
     TTS_time = 1.5
     
     live = None
+    input_stdin = prompt_toolkit.PromptSession(history=prompt_toolkit.history.InMemoryHistory()).prompt
     try:
         while True:
-            _input = rich_console.input(">").strip() if not prompt else prompt
+            _input = input_stdin(">").strip() if not prompt else prompt
             TTS_last = time.monotonic()
             TTS_chunk = ""
             live = Live(
