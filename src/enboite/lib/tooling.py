@@ -733,7 +733,7 @@ def screenshot(monitors_index: list[int]) -> dict[str, list[str] | str]:
     return {"type": "images", "value": results}
 
 
-def read_media(
+def read_image(
     file: str,
     host: bool = False,
     quality: int = 60,
