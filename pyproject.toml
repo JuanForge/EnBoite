@@ -25,7 +25,8 @@ dependencies = [
     "screeninfo",
     "pillow",
     "opencv-python-headless", "numpy",
-    "humanize"
+    "humanize",
+    "prompt-toolkit"
 ]
 
 [project.optional-dependencies]
