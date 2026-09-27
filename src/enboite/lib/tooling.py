@@ -1234,6 +1234,24 @@ def note_rm(ID: str) -> None:
     os.unlink(os.path.join(BASE_NOTE, f"{_secure_ID(ID)}.active"))
 
 
+def pdf2image(file: str) -> str:
+    """
+    returns the folder containing the extracted images
+    """
+    import pymupdf
+    
+    folder = os.path.join(BASE_SHARE, "tmp", secrets.token_hex(8))
+    os.makedirs(folder, exist_ok=True)
+    
+    doc = pymupdf.open(_secure_path(file, make=True))
+    
+    for i, page in enumerate(doc, 1):
+        pix = page.get_pixmap(dpi=300)
+        pix.save(os.path.join(folder, f"p.{i}.png"))
+    
+    doc.close()
+    
+    return os.path.relpath(folder, BASE_SHARE)
 
 if __name__ == "__main__":
     pass  # noqa: PIE790, RUF100

@@ -26,7 +26,8 @@ dependencies = [
     "pillow",
     "opencv-python-headless", "numpy",
     "humanize",
-    "prompt-toolkit"
+    "prompt-toolkit",
+    "pymupdf"
 ]
 
 [project.optional-dependencies]
