@@ -1253,5 +1253,28 @@ def pdf2image(file: str) -> str:
     
     return os.path.relpath(folder, BASE_SHARE)
 
+def webcam_image(index: int = 0):
+    """
+    Give the folder containing the webcam capture image.
+    """
+    import cv2
+    
+    cam = cv2.VideoCapture(index)
+    
+    if not cam.isOpened():
+        raise RuntimeError("not isOpened")
+    
+    ret, frame = cam.read()
+    
+    folder = os.path.join(BASE_SHARE, "tmp", secrets.token_hex(8))
+    os.makedirs(folder, exist_ok=True)
+    
+    if ret:
+        cv2.imwrite(os.path.join(folder, "0.png"), frame)
+    else:
+        raise RuntimeError("not ret")
+    
+    cam.release()
+
 if __name__ == "__main__":
     pass  # noqa: PIE790, RUF100
