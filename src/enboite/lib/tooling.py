@@ -1130,6 +1130,7 @@ def exec_python(code: str, timeout: int = 60, writeoutput: bool = False) -> dict
         try:
             with tempfile.NamedTemporaryFile("w", encoding="utf-8", suffix=".py") as f:
                 f.write(code)
+                f.flush()
                 
                 proc = subprocess.run(
                     [sys.executable, f.name],
