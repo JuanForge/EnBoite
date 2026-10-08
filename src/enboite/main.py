@@ -94,6 +94,7 @@ def _main(
     data_dir: None|str,
     enable_tools: list[str],
     disable_tools: list[str],
+    no_tools: bool
     #config: None|str
 ):
     if prompt_file:
@@ -117,7 +118,16 @@ def _main(
     print("==== tools ====")
     for func_name, func in total_tools.items():
         if (func_name in enable_tools or func_name in config["tools"]):
-            if (not func_name in disable_tools) and (func_name in enable_tools or config["tools"][func_name]):
+            if func_name in disable_tools:
+                use = False
+            elif func_name in enable_tools:
+                use = True
+            elif no_tools:
+                use = False
+            else:
+                use = config["tools"].get(func_name, False)
+            
+            if use:
                 print(f"{c.GREEN}use       : {func_name}{c.RESET}")
                 tools.append(func)
             else:
@@ -313,6 +323,11 @@ def main():
         default=[]
     )
     parser.add_argument(
+        "--no-tools",
+        help="Deactivates all tools.",
+        action="store_true"
+    )
+    parser.add_argument(
         "--dbg-tools",
         action="store_true"
     )
@@ -348,4 +363,5 @@ def main():
         #config=args.config
         enable_tools=args.enable_tools,
         disable_tools=args.disable_tools,
+        no_tools=args.no_tools
     )
