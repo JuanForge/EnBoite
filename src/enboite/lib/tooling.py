@@ -156,8 +156,10 @@ def _input_live(*args, y_n: bool=True, color: bool=False) -> str|bool:
         except Exception as e:  # noqa: BLE001
             print(e)
         for i in args:
-            if color: i = f"\033[48;5;22m\033[38;5;15m{i}\033[0m"
-            print(str(i).replace("\n", "\n ") +"\n")
+            for line in str(i).splitlines():
+                if color: line = f"\033[48;5;22m\033[38;5;15m{line!r}\033[0m"
+                print(line)
+            print("\n", end="")
         
         value = input("input requit y/n >" if y_n else "input requit >").strip()
         
