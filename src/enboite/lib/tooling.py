@@ -12,6 +12,7 @@ import shutil
 import socket
 import subprocess
 import sys
+import tempfile
 from datetime import datetime
 from io import BytesIO
 from pathlib import Path
@@ -1109,7 +1110,7 @@ def FS_request_host_access():
 
 def exec_python(code: str, timeout: int = 60, writeoutput: bool = False) -> dict|str:
     """
-    Exécute du code Python dans un sous-processus.
+    Execute the Python code written in a file in a subprocess.
     
     - code:
         Code Python à exécuter.
@@ -1127,13 +1128,16 @@ def exec_python(code: str, timeout: int = 60, writeoutput: bool = False) -> dict
         result = {}
         
         try:
-            proc = subprocess.run(
-                [sys.executable, "-c", code],
-                capture_output=True,
-                text=True,
-                timeout=timeout,
-                check=False
-            )
+            with tempfile.NamedTemporaryFile("w", encoding="utf-8", suffix=".py") as f:
+                f.write(code)
+                
+                proc = subprocess.run(
+                    [sys.executable, f.name],
+                    capture_output=True,
+                    text=True,
+                    timeout=timeout,
+                    check=False
+                )
             
             result["stdout"] = proc.stdout
             result["stderr"] = proc.stderr
