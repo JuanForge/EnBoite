@@ -92,6 +92,8 @@ def _main(
     prompt_file: None|str,
     non_interactive: bool,
     data_dir: None|str,
+    enable_tools: list[str],
+    disable_tools: list[str],
     #config: None|str
 ):
     if prompt_file:
@@ -114,8 +116,8 @@ def _main(
     print("="* 40)
     print("==== tools ====")
     for func_name, func in total_tools.items():
-        if func_name in config["tools"]:
-            if config["tools"][func_name]:
+        if (func_name in enable_tools or func_name in config["tools"]):
+            if (not func_name in disable_tools) and (func_name in enable_tools or config["tools"][func_name]):
                 print(f"{c.GREEN}use       : {func_name}{c.RESET}")
                 tools.append(func)
             else:
@@ -276,11 +278,6 @@ def main():
         default=None,
         type=str
     )
-    #parser.add_argument(
-    #    "--config",
-    #    default=None,
-    #    type=str
-    #)
     parser.add_argument(
         "--thinking",
         action="store_true"
@@ -304,8 +301,16 @@ def main():
         action="store_true"
     )
     parser.add_argument(
-        "--no-network",
-        action="store_true"
+        "--enable-tools",
+        nargs="+",
+        type=str,
+        default=[]
+    )
+    parser.add_argument(
+        "--disable-tools",
+        nargs="+",
+        type=str,
+        default=[]
     )
     parser.add_argument(
         "--dbg-tools",
@@ -341,4 +346,6 @@ def main():
         non_interactive=args.non_interactive,
         data_dir=args.data_dir,
         #config=args.config
+        enable_tools=args.enable_tools,
+        disable_tools=args.disable_tools,
     )
