@@ -10,6 +10,7 @@ import platform
 import secrets
 import shutil
 import socket
+import string
 import subprocess
 import sys
 import tempfile
@@ -714,6 +715,8 @@ def container_images():
         if client:
             client.close()
 
+#def _image_encode()
+
 
 def screenshot(monitors_index: list[int]) -> dict[str, list[str] | str]:
     """
@@ -735,6 +738,32 @@ def screenshot(monitors_index: list[int]) -> dict[str, list[str] | str]:
         results.append(base64.b64encode(buffer.getvalue()).decode("ascii"))
     return {"type": "images", "value": results}
 
+def screenshot_file(monitors_index: list[int]) -> str:
+    """
+    Review the screenshots for all specified IDs.
+    revoie une liste des png générer
+    """
+    # pyrefly: ignore [missing-import]
+    import mss
+    
+    sct = mss.mss()
+    results = []
+    
+    for id in monitors_index:
+        id += 1
+        shot = sct.grab(sct.monitors[id])
+        image = Image.frombytes("RGB", shot.size, shot.rgb)
+        buffer = BytesIO()
+        image.save(buffer, format="PNG")
+        
+        file = os.path.join("tmp", f"{secrets.token_hex(4)}.png")
+        
+        with open(_secure_path(file), "wb") as f:
+            f.write(buffer.getvalue())
+        
+        results.append(file)
+    
+    return " ".join(results)
 
 def read_image(
     file: str,
@@ -816,7 +845,6 @@ def read_image(
     with open(os.path.join(BASE_TEMP, f"{datetime.now().astimezone().strftime("%Y-%m-%d_%H-%M-%S")}_{secrets.token_hex(8)}.{resolution}p.jpeg"), "wb") as f:
         f.write(image)
     
-    #with open(_path, "rb") as f:
     return {"type": "images", "value": [base64.b64encode(image).decode("ascii")]}
 
 
@@ -1155,7 +1183,6 @@ def exec_python(code: str, timeout: int = 60, writeoutput: bool = False) -> dict
         except Exception as e:  # noqa: BLE001
             result["exception"] = str(e)
         
-        # pyrefly: ignore [bad-return]
         return str(result)
     else:
         raise _client.UserRefusedError()
@@ -1282,6 +1309,103 @@ def webcam_image(index: int = 0):
         raise RuntimeError("not ret")
     
     cam.release()
+
+def _tool_load(ID: str):
+    import importlib.util
+    
+    from enboite.lib import tooling_external
+    
+    BASE_TOOLS = os.path.join(BASE_BASE, "tools")
+    
+    with open(os.path.join(BASE_TOOLS, f"{ID}.json"), "r") as f_json:
+        JSON = json.loads(f_json.read())
+        spec = importlib.util.spec_from_file_location(ID, os.path.join(BASE_TOOLS, f"{ID}.py"))
+        if spec is None or spec.loader is None:
+            raise ImportError(f"Impossible de charger : {ID}")
+        
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        
+        module.main.__name__ = JSON["name"]
+        module.main.__doc__ = (module.main.__doc__ or "") + "\n" + JSON["description"]
+    
+    if SESSION_LLM and type(SESSION_LLM.tools) is list: SESSION_LLM.tools.extend(_build_v2(module.main))
+    # print(json.dumps(SESSION_LLM.tools, indent=4))
+    setattr(tooling_external, JSON["name"], module.main)
+    return JSON["name"]
+
+def tool_create(name: str, description: str, code: str, deps: list[str]):
+    r"""
+    Allows you to add a tool to be executed later and multiple times by "you" (the LLM).
+    
+    name: nom exposé, Allowed characters: a-z, A-Z, _
+    description: Complete documentation on tools, inputs, outputs, and typing, without being overly verbose.
+    code: Python code ready. Always expose 'main', which will be used as the entry point.
+    
+    exemple:
+    name: test_t
+    description: test function
+    code: def main(x: list[int], y: dict): return sum(x) or str(y)
+    """
+    # pyrefly: ignore [unnecessary-type-conversion]
+    for char in str(name):
+        if not char in string.ascii_letters+"_":
+            raise RuntimeError(f"Invalid name: character > '{char}'")
+    
+    if _input_live(code, "add tool", color=True):
+        BASE_TOOLS = os.path.join(BASE_BASE, "tools")
+        
+        os.makedirs(BASE_TOOLS, exist_ok=True)
+        
+        ID = secrets.token_hex(8)
+        
+        with open(os.path.join(BASE_TOOLS, f"{ID}.py"), "w") as f_py, open(os.path.join(BASE_TOOLS, f"{ID}.json"), "w") as f_json:
+            f_py.write(code)
+            f_json.write(json.dumps({"name": f"{ID}_{name}", "description": description}))
+        
+        return _tool_load(ID)
+    else:
+        raise _client.UserRefusedError()
+
+def keyboard_key(x: str, t: float|None=None):
+    """
+    x: touche clavier
+    time: duration (seconds) to hold the key down.
+    
+    adapté pour UNE touche
+    """
+    import time
+    
+    import pynput
+    import pynput.keyboard
+    
+    keyboard = pynput.keyboard.Controller()
+    
+    if len(x) > 1:
+        # pyrefly: ignore [bad-assignment]
+        x = pynput.keyboard.Key.__members__.get(x.lower(), x)
+    
+    keyboard.press(x)
+    if t: time.sleep(t)
+    keyboard.release(x)
+    
+    return True
+
+def keyboard_press(x: str):
+    """
+    Type a string of text.
+    
+    x: Text to type.
+    
+    adapté au TEXTE
+    """
+    import pynput
+    import pynput.keyboard
+    
+    keyboard = pynput.keyboard.Controller()
+    keyboard.type(x)
+    
+    return True
 
 if __name__ == "__main__":
     pass  # noqa: PIE790, RUF100

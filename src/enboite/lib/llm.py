@@ -18,7 +18,7 @@ except ImportError as e:
             return json.dumps(x).encode()
 import requests
 
-from enboite.lib import tooling
+from enboite.lib import tooling, tooling_external
 
 
 class client:
@@ -220,12 +220,14 @@ class client:
                 
                 start_time_tool = time.monotonic()
                 try:
-                    # pyrefly: ignore [unsupported-operation]
-                    func = getattr(tooling, name)
-                    if func.__module__ != tooling.__name__:
-                        raise ValueError("Tool externe")
-                    
-                    tool_result = func(**arguments)
+                    if getattr(tooling_external, name, None):
+                        func = getattr(tooling_external, name)
+                        tool_result = str(func(**arguments))
+                    else:
+                        func = getattr(tooling, name)
+                        if func.__module__ != tooling.__name__:
+                            raise ValueError("Tool externe")
+                        tool_result = func(**arguments)
                 except Exception as e:  # noqa: BLE001
                     tool_result = f"Tool '{name}' failed: {type(e).__name__}: {e}"
                     if self.printError:

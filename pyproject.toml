@@ -44,7 +44,8 @@ full = [
     "mss",
     "enboite[ssh]",
     "psutil",
-    "ddgs"
+    "ddgs",
+    "pynput"
 ]
 dev = [
     "types-docker",
