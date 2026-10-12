@@ -1334,25 +1334,38 @@ def _tool_load(ID: str):
     setattr(tooling_external, JSON["name"], module.main)
     return JSON["name"]
 
-def tool_create(name: str, description: str, code: str, deps: list[str]):
+def tool_create(name: str, description: str, input: str, file: bool, deps: list[str]):
     r"""
     Allows you to add a tool to be executed later and multiple times by "you" (the LLM).
     
     name: nom exposé, Allowed characters: a-z, A-Z, _
     description: Complete documentation on tools, inputs, outputs, and typing, without being overly verbose.
-    code: Python code ready. Always expose 'main', which will be used as the entry point.
+    input:
+      Python code ready. Always expose 'main', which will be used as the entry point,
+      or the path to a file containing the code with the standards already set.
+    file: Set to True if the input is a path.
+    
+    Prefer the file method.
     
     exemple:
     name: test_t
     description: test function
-    code: def main(x: list[int], y: dict): return sum(x) or str(y)
+    input: def main(x: list[int], y: dict): return sum(x) or str(y)
+    file: false
+    or
+    input: tool-test.py
+    file: true
     """
     # pyrefly: ignore [unnecessary-type-conversion]
     for char in str(name):
         if not char in string.ascii_letters+"_":
             raise RuntimeError(f"Invalid name: character > '{char}'")
     
-    if _input_live(code, "add tool", color=True):
+    if file:
+        with open(_secure_path(input), "r", encoding="utf-8") as f:
+            input = f.read()
+    
+    if _input_live(input, "add tool", color=True):
         BASE_TOOLS = os.path.join(BASE_BASE, "tools")
         
         os.makedirs(BASE_TOOLS, exist_ok=True)
@@ -1360,7 +1373,7 @@ def tool_create(name: str, description: str, code: str, deps: list[str]):
         ID = secrets.token_hex(8)
         
         with open(os.path.join(BASE_TOOLS, f"{ID}.py"), "w") as f_py, open(os.path.join(BASE_TOOLS, f"{ID}.json"), "w") as f_json:
-            f_py.write(code)
+            f_py.write(input)
             f_json.write(json.dumps({"name": f"{ID}_{name}", "description": description}))
         
         return _tool_load(ID)
