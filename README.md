@@ -30,11 +30,25 @@ pip install --no-cache-dir .
 ### qwen3.6:35b-a3b
 - To be avoided, handles loops poorly.
 
-| qwen3.8:27b | ornith-1.5:35b | qwen3.6:35b-a3b |
-|-------------|----------------|-----------------|
-|0|0|0|
+## Benchmark
+
+| Task           | qwen3.8:27b | ornith-1.5:35b | qwen3.6:35b-a3b |
+|----------------|-------|----------------|-----------------|
+|***sha256***    |x%|x%|x%|
 
 > **For those familiar with Python, you can easily run benchmarks yourself. For everyone else, I'm trying to simplify the benchmarking system.**
+
+
+
+
+# Requirements
+- `Ollama` ( As for other inference engines, I'm not sure whether they're compatible with the HTTP API I'm using. )
+- `Native tool support`
+
+***Hardware requirements mainly depend on the model.***
+- `12+ GB VRAM`
+- `32+ GB RAM`
+- `15 GB+ swap`
 
 # Python
 Python 3.12.3
