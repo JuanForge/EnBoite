@@ -154,6 +154,10 @@ def _main(
     )
     t.SESSION_LLM = session
     
+    for f in Path(os.path.join(t.BASE_BASE, "tools")).glob("*.py"):
+        _f_c = t._tool_load(f.stem)
+        #tools.extend(t._build_v2(f_c))
+    
     if save_chat and os.path.isfile(save_chat_file):
         with open(save_chat_file, "rb") as f:
             session.load(f.read())
