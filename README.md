@@ -49,7 +49,8 @@ Python 3.12.3
 
 ## Security
 
-Security is my top priority. All sensitive actions require explicit user authorization, allowing users to maintain control over every sensitive operation.
+Security is my top priority.
+All sensitive actions require explicit user authorization, allowing users to maintain control over every sensitive operation.
 
 # Available tools (table not actively maintained)
 > Other tools may not be listed, as some tools are disabled by default.
