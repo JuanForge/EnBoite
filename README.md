@@ -21,20 +21,14 @@ pip install --no-cache-dir .
 
 *Highly recommended model for a basic config:* `ornith-1.5:35b`
 
-### qwen3.8:27b
-- The best, perfect for effective tool usage and large autonomous loops, but requires a powerful setup.
-
-### ornith-1.5:35b
-- Close to qwen3.6:35b-a3b, but with better loop handling. Probably the most suitable for everyone.
-
-### qwen3.6:35b-a3b
-- To be avoided, handles loops poorly.
-
 ## Benchmark
 
-| Task           | qwen3.8:27b | ornith-1.5:35b | qwen3.6:35b-a3b |
-|----------------|-------|----------------|-----------------|
-|***sha256***    |x%|x%|x%|
+| Model            | sha256 | description |
+|:----------------:|:------:|:-----------:|
+| qwen3.8:27b      | x%     | `The best, perfect for effective tool usage and large autonomous loops, but requires a powerful setup.` |
+| ornith-1.5:35b   | x%     | `Close to qwen3.6:35b-a3b, but with better loop handling. Probably the most suitable for everyone.` |
+| qwen3.6:35b-a3b  | x%     | `To be avoided, handles loops poorly.` |
+| gemma4:26b       | x%     | `Good at multilingual conversations, but handles multiple tool calls and loops very poorly.` |
 
 > **For those familiar with Python, you can easily run benchmarks yourself. For everyone else, I'm trying to simplify the benchmarking system.**
 
