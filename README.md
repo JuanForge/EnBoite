@@ -17,6 +17,20 @@ pip install --no-cache-dir .
 ```
 
 
+# Examples
+
+<div style="display: flex; align-items: flex-start; gap: 12px;">
+  <img src="./media/task-0.png" alt="0" width="160">
+  <blockquote style="margin: 0; line-height: 1.6;">
+    Build a simple, beautiful calculator on a website.<br>
+    Do everything inside a container.<br>
+    Don't explain anything; provide only the final response with information about the container and website.
+  </blockquote>
+</div>
+
+---
+---
+
 # Models
 
 *Highly recommended model for a basic config:* `ornith-1.5:35b`
