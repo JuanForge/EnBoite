@@ -225,9 +225,8 @@ def get_time():
 
 def exec_shell(commande: str):
     """
-    permet d'exécuter une commande dans un terminal Bash.
-    Avant l'action, demander l'autorisation de l'utilisateur pour exécuter la commande.
-    Et une autorisation supplémentaire sera également demandée à l'utilisateur.
+    Allows executing commands in a Bash terminal.
+    User approval is required before execution, followed by an additional confirmation.
     """
     print("\n")
     print("\033[41m" + repr(commande) + "\033[0m")
@@ -398,7 +397,7 @@ def system():
 
 def get_ip():
     """
-    permet d'avoir l'ip local utilisé pour les connexion, et l'ip publique
+    Retrieves the local IP used for connections and the public IP.
     """
     def get_ip(url: str) -> str | None:
         try:
@@ -440,12 +439,9 @@ def get_geo_ip(ip: str):
 
 def search_web_v1(query: str, max_results: int = 5):
     """
-    permet une recherche web,
-    retourne un enssemble de réponses.
-    recu : URL, titre, courte description
+    Performs a web search and returns a list of results, each containing a URL, title, and short description.
     
-    - max_results:
-        spécifier le nombre de résultat. defaut 5, max 15, min 1.
+    - max_results: Specifies the number of results (default: 5, max: 15).
     """
     from ddgs import DDGS
     max_result = 15
@@ -465,21 +461,18 @@ def search_web_v2(
     type: str = "text"
 ) -> str:
     """
-    - query:
-        Rerche
-    - results:
-        Nombre max de résultat, default: 5, max: 20
+    - query: Search
+    - results: Maximum number of results (default: 5, max: 20).
     - type:
-        type resésultat, permit : text, news, videos, books, images.
-        Make sure to properly define the type for optimal search results.
-    - raw:
-        Returns a dict, useful when the default format is unsuitable.
+      Result type. Allowed values: text, news, videos, books, images.
+      Make sure to properly define the type for optimal search results.
+    - raw: Returns a dict, useful when the default format is unsuitable.
     """
     from ddgs import DDGS
     max_result = 20
     
     if not type in ["text", "news", "videos", "books", "images"]:
-        raise ValueError("type inconnue")
+        raise ValueError("Unknown type")
     
     d = getattr(DDGS(), type)(
         query,
@@ -497,14 +490,11 @@ def download(
     userAgent: str = "Mozilla/5.0"
 ) -> str:
     """
-    Télécharge une ressource depuis une URL et la sauvegarde localement, quel que soit son type.
+    Downloads a resource from a URL and saves it locally, regardless of file type.
     
-    - url:
-        url qui permet le get
-    - path:
-        fichier au quelle save les donnée
-    - userAgent:
-        Specific User-Agent: do not set one without a reason.
+    - url: URL to send the GET request to.
+    - path: File to save the data to.
+    - userAgent: Specific User-Agent, do not set one without a reason.
     """
     _path = _secure_path(path)
     
@@ -531,8 +521,7 @@ def download(
 
 def fetch_url_v1(url: str):
     """
-    retourne le contenue d'une page.
-    format : markdown
+    Returns the page content in Markdown format.
     """
     from ddgs import DDGS
     return DDGS().extract(
@@ -542,12 +531,9 @@ def fetch_url_v1(url: str):
 
 def fetch_url_raw_v1(url: str, proxy: str|None = None):
     """
-    retourne le contenue d'une page.
-    format : html/raw
+    Returns the page content in HTML/raw format.
     
-    - proxy:
-            - exmanples:
-                        "socks5h://127.0.0.1:9050"
+    - proxy: - exmanples: "socks5h://127.0.0.1:9050"
     """
     
     kwargs = {}
@@ -584,17 +570,17 @@ def container_start(
     Multiple containers can be created.
     
     - image:
-        specify the base container image,
-        leave unset to automatically select a suitable base image.
-        Only Debian-based images are supported.
-        Do not modify it without reason.
+      specify the base container image,
+      leave unset to automatically select a suitable base image.
+      Only Debian-based images are supported.
+      Do not modify it without reason.
     - gpus:
-        specify the GPU IDs to attach to the container,
-        use -1 to attach all GPUs,
-        leave unset to attach no GPUs.
-        Do not modify it without reason.
-        - exmanples:
-            gpus=-1, gpus=[0,1]
+      specify the GPU IDs to attach to the container,
+      use -1 to attach all GPUs,
+      leave unset to attach no GPUs.
+      Do not modify it without reason.
+      - exmanples:
+        gpus=-1, gpus=[0,1]
     """
     # pyrefly: ignore [missing-import]
     import docker
@@ -691,7 +677,7 @@ def container_start(
 
 def container_stop_all() -> None:
     """
-    Permet de supprimer/stopper tous les container temporairer créer par vous
+    Stops and removes all temporary containers created by you.
     """
     for i, container in enumerate(DOCKER_CONTAINER_LIST.copy()):
         container.stop(timeout=1)
@@ -873,7 +859,7 @@ def TTS_make_pt(input: str, ref: str = "", ref_file: str = "", x_vector_only: bo
 
 def TTS_set_pt(file: str) -> str:
     """
-    définie le .pt ( voix spécifique ) utiliser pour tout les TTS future
+    Sets the .pt file (specific voice) to use for all future TTS generations.
     """
     return TTS.TTS_fix(file)
 
@@ -1142,14 +1128,11 @@ def exec_python(code: str, timeout: int = 60, writeoutput: bool = False) -> dict
     """
     Execute the Python code written in a file in a subprocess.
     
-    - code:
-        Code Python à exécuter.
-    - timeout:
-        Délai maximal d'execution secondes (défaut 60).
-        max : 200
+    - code: Python code to execute.
+    - timeout: Maximum execution time in seconds (default: 60, max: 200).
     - writeoutput:
-        Affiche le résultat de l'execution sur la console utilisateur,
-        A activer seulement si l'user requit de voir les sorties console.
+      Displays execution output in the user's console.
+      Enable only when explicitly requested by the user.
     
     Returns: Dictionnaire contenant stdout, stderr, returncode.
     """
