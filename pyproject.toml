@@ -45,7 +45,8 @@ full = [
     "enboite[ssh]",
     "psutil",
     "ddgs",
-    "pynput"
+    "pynput",
+    "Wikipedia-API"
 ]
 dev = [
     "types-docker",

@@ -26,11 +26,11 @@ base_commande = [
 ]
 
 
-processes: dict[str, subprocess.Popen] = {}
+processes: dict[str, subprocess.Popen[bytes]] = {}
 
 _result = []
 
-def clear(x: dict[str, subprocess.Popen]) -> dict[str, subprocess.Popen]:
+def clear(x: dict[str, subprocess.Popen[bytes]]) -> dict[str, subprocess.Popen[bytes]]:
     for path, proc in list(x.items()):
         if proc.poll() != None:
             del x[path]

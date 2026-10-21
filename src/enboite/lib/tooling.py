@@ -82,7 +82,7 @@ def _build(funcs):
     if not type(funcs) is list:
         funcs = [funcs]
     
-    result: list = []
+    result: list[dict[Any]] = []
     for func in funcs:
         signature = inspect.signature(func)
         
@@ -1402,6 +1402,41 @@ def keyboard_press(x: str):
     keyboard.type(x)
     
     return True
+
+if TYPE_CHECKING:
+    import wikipediaapi
+# pyrefly: ignore[bad-assignment]
+WIKI: wikipediaapi._wikipedia.wikipedia.Wikipedia = None
+
+def _init_wiki():
+    import wikipediaapi
+    global WIKI
+    if not WIKI:
+        WIKI = wikipediaapi.Wikipedia(
+            language="en",
+            user_agent="EnBoite (https://github.com/JuanForge/EnBoite)",
+            extract_format=wikipediaapi.ExtractFormat.WIKI,
+        )
+    return WIKI
+
+def wiki_search(query: str, limit: int = 5):
+    """
+    Perform a search on Wikipedia.
+    """
+    b = add()
+    _title: bool = False
+    
+    for t, p in _init_wiki().search(query, limit=limit).pages.items():  # noqa: PERF102
+        b(f"title: {t}" if _title else t)
+    return b.result
+
+def wiki_page(title: str):
+    """
+    returns the text of the article page.
+    - title: Exact title of the page.
+    """
+    return _init_wiki().page(title).text
+
 
 if __name__ == "__main__":
     pass  # noqa: PIE790, RUF100
