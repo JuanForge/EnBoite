@@ -8,6 +8,7 @@ import sys
 import time
 from collections.abc import Callable
 from io import BytesIO
+from typing import Any
 
 import prompt_toolkit
 import prompt_toolkit.history
@@ -111,7 +112,7 @@ def _main(
         t._set_base(str((Path.home() / "Documents" / "enboite-share" ).resolve()))
     
     config = loadConfig(str(t.BASE_BASE))
-    tools: list = []
+    tools: list[dict[str, Any]] = []
     
     total_tools = loadToolings()
     print("="* 40)

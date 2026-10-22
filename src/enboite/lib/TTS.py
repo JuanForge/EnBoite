@@ -35,7 +35,7 @@ class audio:
     SESSION_HTTP = requests.Session()
     
     @staticmethod
-    def upload_file(path) -> str:
+    def upload_file(path: str) -> str:
         with open(path, "rb") as f:
             r = audio.SESSION_HTTP.post(
                 f"{audio.BASE_URL}/gradio_api/upload",
@@ -45,7 +45,7 @@ class audio:
         return r.json()[0]
     
     @staticmethod
-    def wait_for_event(endpoint, event_id):
+    def wait_for_event(endpoint: str, event_id: str):
         with audio.SESSION_HTTP.get(
             f"{audio.BASE_URL}/gradio_api/call/{endpoint}/{event_id}",
             stream=True,
@@ -71,7 +71,7 @@ class audio:
         raise RuntimeError("Aucun résultat reçu")
     
     @staticmethod
-    def download_file(path, output: str = "", memory: bool = False):
+    def download_file(path: str, output: str = "", memory: bool = False):
         url = f"{audio.BASE_URL}/gradio_api/file={quote(path, safe='/')}"
         
         r = audio.SESSION_HTTP.get(url)

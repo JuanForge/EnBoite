@@ -1,7 +1,7 @@
 import time
 from collections.abc import Generator
 from copy import deepcopy
-from typing import Literal
+from typing import Any, Literal
 
 try:
     # pyrefly: ignore [missing-import]
@@ -11,10 +11,10 @@ except ImportError as e:
     import json
     class orjson:
         @staticmethod
-        def loads(x):
+        def loads(x: Any):
             return json.loads(x)
         @staticmethod
-        def dumps(x):
+        def dumps(x: Any):
             return json.dumps(x).encode()
 import requests
 
@@ -36,7 +36,7 @@ class client:
         system_prompt: str|None = None,
         num_ctx: int|None = None,
         keep_alive: str|int|None = None,
-        tools: list|None = None,
+        tools: list[dict[Any, Any]]|None = None,
         endpoint: str = "http://127.0.0.1:11434",
         proxy: str|None = None,
         timeout: None|int = None,
@@ -54,7 +54,7 @@ class client:
         self.http.headers.update({
             "User-Agent": "EnBoite/0.0.0"
         })
-        self.messages: list[dict] = []
+        self.messages: list[dict[Any, Any]] = []
         self.total_token = 0
         self.token_per_sec = 0
         self._systemPrompt()
@@ -123,7 +123,7 @@ class client:
         )
         return response
     
-    def generate_raw(self, msg: str) -> Generator[dict]:
+    def generate_raw(self, msg: str) -> Generator[dict[str, Any]]:
         if msg != "":
             self.messages.append(
                 {
@@ -196,9 +196,9 @@ class client:
         yield {"type": "tool_calls", "content": self.messages[-1].get("tool_calls", [])}
         return None
     
-    def generate(self, content: str) -> Generator[dict]:
+    def generate(self, content: str) -> Generator[dict[str, Any]]:
         while True:
-            tool_calls =  []
+            tool_calls: list[dict[str, Any]] =  []
             stream = self.generate_raw(content)
             content = ""
             for chunk in stream:

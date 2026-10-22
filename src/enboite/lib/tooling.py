@@ -14,6 +14,7 @@ import string
 import subprocess
 import sys
 import tempfile
+from collections.abc import Callable
 from datetime import datetime
 from io import BytesIO
 from pathlib import Path
@@ -67,7 +68,7 @@ TYPE_MAP = {
 }
 
 
-def _get_json_type(python_type):
+def _get_json_type(python_type: Any):
     if python_type in TYPE_MAP:
         return TYPE_MAP[python_type]
     
@@ -78,7 +79,8 @@ def _get_json_type(python_type):
     
     raise TypeError(f"Type non supporté : {python_type}")
 
-def _build(funcs):
+"""
+def _build(funcs: Callable|list[Callable]):
     if not type(funcs) is list:
         funcs = [funcs]
     
@@ -112,9 +114,9 @@ def _build(funcs):
             },
         })
     return result
+"""
 
-
-def _build_v2(funcs):
+def _build_v2(funcs: Callable|list[Callable]):
     funcs = funcs if isinstance(funcs, list) else [funcs]
     return [
         {
@@ -143,13 +145,13 @@ def _build_v2(funcs):
 class add:
     def __init__(self):
         self.result = ""
-    def __call__(self, *args) -> None:
+    def __call__(self, *args: Any) -> None:
         for i in args:
             self.result += f"\n{i}"
 
 LIVE: None | rich_Live = None
 
-def _input_live(*args, y_n: bool=True, color: bool=False) -> str|bool:
+def _input_live(*args: Any, y_n: bool=True, color: bool=False) -> str|bool:
     if INTERACTIVE:
         try:
             if LIVE:
@@ -1124,7 +1126,7 @@ def FS_request_host_access():
 
 # ==== FS ==== end
 
-def exec_python(code: str, timeout: int = 60, writeoutput: bool = False) -> dict|str:
+def exec_python(code: str, timeout: int = 60, writeoutput: bool = False) -> dict[str, str]|str:
     """
     Execute the Python code written in a file in a subprocess.
     
@@ -1328,7 +1330,7 @@ def tool_create(name: str, description: str, input: str, file: bool, deps: list[
       or the path to a file containing the code with the standards already set.
     file: Set to True if the input is a path.
     
-    Prefer the file method.
+    Prefer the file over the code if the file already exists.
     
     exemple:
     name: test_t
@@ -1362,6 +1364,21 @@ def tool_create(name: str, description: str, input: str, file: bool, deps: list[
         return _tool_load(ID)
     else:
         raise _client.UserRefusedError()
+
+#def tool_rm(name: str):
+#    # pyrefly: ignore[unnecessary-type-conversion]
+#    for c in str(name):
+#        if not c in string.ascii_letters+"_":
+#            raise RuntimeError(f"invalid char: '{c}'")
+#    
+#    source = os.path.join(BASE_BASE, "tools", f"{name}.json")
+#    if os.path.isfile(
+#        source
+#    ):
+#        os.unlink(source)
+#        # boucle a chaud sur la session LLM a faire
+#    else:
+#        raise RuntimeError("not found module")
 
 def keyboard_key(x: str, t: float|None=None):
     """
