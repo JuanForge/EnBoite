@@ -229,13 +229,14 @@ def exec_shell(commande: str):
     """
     Allows executing commands in a Bash terminal.
     """
-    if _input_live(commande, "execute_python", y_n=True, color=True):
+    if _input_live(commande, "execute_command", y_n=True, color=True):
         rs = subprocess.run(
             commande,
             shell=True,
             capture_output=True,
             text=True,
-            check=False
+            check=False,
+            cwd=os.getcwd()
             )
         return f"stdout : {rs.stdout}, stderr : {rs.stderr}, returncode : {rs.returncode}"
     else:
