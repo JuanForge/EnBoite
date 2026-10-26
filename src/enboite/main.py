@@ -45,7 +45,7 @@ def speaker(content: bytes) -> None:
         sd.wait()
 
 def _prompt(x: list[str]) -> str:
-    return "".join([line for line in x if not line.lstrip().startswith("#")])
+    return "".join([line for line in x if not line.lstrip().startswith(">")])
 
 # pyrefly: ignore [bad-return]
 def loadToolings() -> dict[str, Callable]:
@@ -206,7 +206,7 @@ def _main(
                             thinking_data = thinking_data[-_max_size_thinking:]
                         
                         elif chunk["type"] == "tool":
-                            tools_data += f'function : {chunk["function"]}\n'
+                            tools_data += f'{chunk["function"]}\n'
                             tools_data = tools_data[-_max_size_tools:]
                         
                         elif chunk["type"] in ("done", "refresh"):
