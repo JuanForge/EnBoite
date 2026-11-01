@@ -58,6 +58,10 @@ class _client:
                 super().__init__(
                     "Host filesystem access is disabled by user"
                 )
+    class secure_path:
+        class Error(Exception): pass
+        class AbsolutePathForbiddenError(Error): pass
+        class PathTraversalForbiddenError(Error): pass
 
 TYPE_MAP = {
     str: "string",
@@ -202,22 +206,31 @@ def _set_base(path: str) -> None:
 
 def _secure_path(input: str, make: bool = False):
     """
-    RAISE
-    ONLY FILE FOR MAKE
+    raise if error
+    
+    - make: only for a file
     """
     _input = Path(input)
     if _input.is_absolute():
-        raise ValueError(f"Absolute path prohibited for {input}")
+        raise _client.secure_path.AbsolutePathForbiddenError()
     
     path = (BASE_SHARE / _input).resolve()
     if not path.is_relative_to(BASE_SHARE):
-        raise ValueError("Path traversal forbidden")
+        raise _client.secure_path.PathTraversalForbiddenError()
     
     if make:
         os.makedirs(os.path.dirname(path), exist_ok=True)
     
     return Path(path)
 
+def _request_fs_elevation(path: str|Path) -> Path:
+    try:
+        return _secure_path(str(path))
+    except _client.secure_path.Error:
+        if not FS_PERMIT_HOST:
+            raise _client.FS.HostAccessDeniedError()
+        else:
+            return Path(str(path))
 
 
 def get_time():
@@ -993,12 +1006,13 @@ def FS_copy(source: str, destination: str) -> bool:
     """
     Copies a file from source to destination within the shared directory.
     Paths are relative to the shared base directory.
+    source can be a full path, to transfer user files to the shared folder.
     """
-    src = _secure_path(source, make=False)
+    src = _request_fs_elevation(source)
     dst = _secure_path(destination, make=True)
     
-    if not src.exists():
-        raise FileNotFoundError("Source file not found:")
+    # if not src.exists():
+    #     raise FileNotFoundError("Source file not found:")
     
     shutil.copy2(str(src), str(dst))
     #return f"Copied from {source} to {destination}"

@@ -174,7 +174,7 @@ def _main(
                         (
                             str(file.resolve()),
                             title if title else (
-                                Path(f_f.name).stem+" : "+JSON[0].get("content", "")[:30] if len(JSON) > 0 else ""
+                                Path(f_f.name).stem+" : "+(JSON[0].get("content", "")[:30] if len(JSON) > 0 else "")
                             ) + "..."
                         )
                     )
