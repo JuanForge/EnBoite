@@ -67,7 +67,7 @@ def loadConfig(x: str):
     else:
         table = tomlkit.table()
         for key in loadToolings():
-            if not key.startswith(("TTS", "exec", "keyboard")):
+            if not key.startswith(("TTS", "keyboard")):
                 table.add(key, True)
             else:
                 table.add(key, False)
@@ -172,7 +172,7 @@ def _main(
     TTS_time = 1.5
     
     live = None
-    input_stdin = prompt_toolkit.PromptSession(history=prompt_toolkit.history.InMemoryHistory()).prompt
+    input_stdin = prompt_toolkit.PromptSession(history=prompt_toolkit.history.FileHistory(os.path.join(t.BASE_BASE, "history.txt"))).prompt
     try:
         while True:
             _input = input_stdin(">").strip() if not prompt else prompt

@@ -226,9 +226,7 @@ def get_time():
 
 
 def exec_shell(commande: str):
-    """
-    Allows executing commands in a Bash terminal.
-    """
+    """Allows executing commands in a Bash terminal."""
     if _input_live(commande, "execute_command", y_n=True, color=True):
         rs = subprocess.run(
             commande,
@@ -247,9 +245,7 @@ def exec_shell(commande: str):
 ssh_objet: paramiko.SSHClient | None = None  # noqa: F821
 
 def ssh_login(ip: str, port: int, username: str, password: str, key_filename: str|None = None):
-    """
-    Creates a persistent SSH connection.
-    """
+    """Creates a persistent SSH connection"""
     # pyrefly: ignore [missing-import]
     import paramiko
     
@@ -270,8 +266,7 @@ def ssh_login(ip: str, port: int, username: str, password: str, key_filename: st
 def ssh_commande(commande: str, timeout: int = 20):
     """
     Executes the specified command on the SSH session previously created by ssh_login.
-    - timeout:
-        Default: 20 seconds, max: 300 seconds
+    - timeout: default: 20 seconds, max: 300 seconds
     """
     _max = 300
     
@@ -518,9 +513,7 @@ def download(
     })
 
 def fetch_url_v1(url: str):
-    """
-    Returns the page content in Markdown format.
-    """
+    """Returns the page content in Markdown format"""
     from ddgs import DDGS
     return DDGS().extract(
         url,
@@ -725,7 +718,7 @@ def screenshot(monitors_index: list[int]) -> dict[str, list[str] | str]:
 def screenshot_file(monitors_index: list[int]) -> str:
     """
     Review the screenshots for all specified IDs.
-    revoie une liste des png générer
+    Review a list of generated PNGs
     """
     # pyrefly: ignore [missing-import]
     import mss
@@ -837,17 +830,17 @@ def TTS_make_pt(input: str, ref: str = "", ref_file: str = "", x_vector_only: bo
     Generate a .pt voice profile file from an audio recording and return the path to the generated file.
     
     - input:
-             Path to the audio file containing the voice sample.
-             Minimum: 3s
-             Recommended: 5–10s
-             Maximum: 120s
+      Path to the audio file containing the voice sample.
+      Minimum: 3s
+      Recommended: 5–10s
+      Maximum: 120s
     
     - ref:
-           Text transcription of the speech contained in the audio file. This transcription is used as the reference text for voice cloning.
+      Text transcription of the speech contained in the audio file. This transcription is used as the reference text for voice cloning.
     - ref_file:
-                Allows specifying the transcription contained in a file, which is very useful for avoiding costly memory and token operations.
+      Allows specifying the transcription contained in a file, which is very useful for avoiding costly memory and token operations.
     - x_vector_only:
-                     Set to true when the audio cannot be transcribed. When true, the voice embedding is extracted without using a text transcription.
+      Set to true when the audio cannot be transcribed. When true, the voice embedding is extracted without using a text transcription.
     
     Always prioritize `ref_file` over `ref` whenever both are available.
     
@@ -880,13 +873,12 @@ def TTS_status() -> bool:
 
 def TTS_generator(input: str, outputPath: str) -> str:
     """
-    Permet de générer un audio avec la voix définie
+    Allows generating audio using the configured voice
     
-    - input:
-             Texte a prononcer
+    - input: Text to be spoken
     - ouput:
-             WAV générer qui contient le résultat de la génération audio
-             Path seulement relatif accecpeté
+      Generated WAV file containing the audio generation output
+      Only relative paths are accepted
     
     A VRAM OOM is very likely to occur. Consider using an unload if available.
     """
@@ -926,7 +918,7 @@ def FS_mkdir(path: str) -> str:
     os.makedirs(target, exist_ok=True)
     return f"Directory created: {target}"
 
-def FS_file_info(
+def FS_info(
     path: str,
     host: bool = False
 ) -> str:
@@ -956,7 +948,7 @@ def FS_file_info(
         "is_dir": _path.is_dir()
     })
 
-def FS_file_write(file: str, content: str, mode: str = "w") -> str:
+def FS_write(file: str, content: str, mode: str = "w") -> str:
     """
     Writes text content to a file. Creates the file if it doesn't exist.
     For appending content, use mode='a'. The path is relative to the shared base.
@@ -966,7 +958,7 @@ def FS_file_write(file: str, content: str, mode: str = "w") -> str:
         f.write(content)
     return f"Content written to {target} ({len(content)} bytes)"
 
-def FS_file_delete(path: str) -> str:
+def FS_delete(path: str) -> str:
     """
     Deletes a file from the shared directory.
     The path is relative to the shared base directory.
@@ -980,7 +972,7 @@ def FS_file_delete(path: str) -> str:
     target.unlink()
     return f"Deleted: {target}"
 
-def FS_file_move(source: str, destination: str) -> str:
+def FS_move(source: str, destination: str) -> bool:
     """
     Moves a file from source to destination within the shared directory.
     Paths are relative to the shared base directory.
@@ -992,9 +984,10 @@ def FS_file_move(source: str, destination: str) -> str:
         raise FileNotFoundError("Source file not found")
     
     shutil.move(str(src), str(dst))
-    return f"Moved from {source} to {destination}"
+    # return f"Moved from {source} to {destination}"
+    return True
 
-def FS_file_copy(source: str, destination: str) -> str:
+def FS_copy(source: str, destination: str) -> bool:
     """
     Copies a file from source to destination within the shared directory.
     Paths are relative to the shared base directory.
@@ -1006,7 +999,8 @@ def FS_file_copy(source: str, destination: str) -> str:
         raise FileNotFoundError("Source file not found:")
     
     shutil.copy2(str(src), str(dst))
-    return f"Copied from {source} to {destination}"
+    #return f"Copied from {source} to {destination}"
+    return True
 
 
 def FS_ls(
@@ -1051,31 +1045,29 @@ def FS_ls(
     
     return "\n".join(results).strip()
 
-def FS_cat(
+def FS_read(
     file: str,
     host: bool,
     start: int = 0,
     end: int = 2048
-):
+) -> str:
     """
     Displays the contents of the requested file.
     
-    - start:
-             Starting character position.
-             default: 0
+    - start: Starting character position. default: 0
     
     - end:
-           Ending character position (exclusive).
-           This is the absolute end position, NOT the number of characters to read.
-           default: 2048
+      Ending character position (exclusive).
+      This is the absolute end position, NOT the number of characters to read.
+      default: 2048
     
     The maximum amount of content returned by a single call is 8192 characters.
     
     For ONLY example:
-                start=0, end=8192
-                start=8192, end=16384
-                start=16384, end=24576
-                ...
+      start=0, end=8192
+      start=8192, end=16384
+      start=16384, end=24576
+      ...
     
     Remember to use this tool multiple times if a complete read is required or if
     a single read is not sufficient.
