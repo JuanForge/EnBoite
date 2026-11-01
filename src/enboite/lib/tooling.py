@@ -187,6 +187,8 @@ BASE_SHARE: Path = None
 BASE_NOTE: Path = None
 # pyrefly: ignore [bad-assignment]
 BASE_TEMP: Path = None
+# pyrefly: ignore[bad-assignment]
+CHAT_META: Path = None
 
 def _set_base(path: str) -> None:
     global BASE_BASE, BASE_SHARE, BASE_NOTE, BASE_TEMP
@@ -1436,6 +1438,31 @@ def wiki_page(title: str):
     - title: Exact title of the page.
     """
     return _init_wiki().page(title).text
+
+def _set_meta_title(title: str):
+    _max_len: int = 120
+    
+    if CHAT_META:
+        if len(title) <= _max_len:
+            if not CHAT_META.exists():
+                CHAT_META.write_text(json.dumps({}))
+            
+            with open(str(CHAT_META), "r+", encoding="utf-8") as f:
+                JSON = json.loads(f.read())
+                JSON["title"] = title
+                f.seek(0)
+                f.write(json.dumps(JSON))
+                f.truncate()
+        else:
+            raise RuntimeError(f"Title too long.\nMaximum length: {_max_len} characters.")
+    else:
+        raise RuntimeError("CHAT_META unassigned title handler")
+
+def meta_title(title: str) -> bool:
+    """Set a user-visible title to help distinguish this conversation from others."""
+    _set_meta_title(title)
+    return True
+
 
 
 if __name__ == "__main__":

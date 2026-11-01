@@ -162,8 +162,22 @@ def _main(
         if not non_interactive:
             chats: list[tuple[str, str]] = []
             for file in Path(t.BASE_BASE).glob("chat.log*.bin"):
+                title = None
+                chat_meta = Path(os.path.join(str(t.BASE_BASE), f"{Path(file).stem}.json"))
+                if os.path.isfile(chat_meta):
+                    with open(chat_meta, "r") as f:
+                        title = json.loads(f.read()).get("title", None)
+                
                 with open(str(file), "r", encoding="utf-8") as f_f:
-                    chats.append((str(file.resolve()), str(json.loads(f_f.read())[0]["content"][:30]) + "..."))
+                    JSON = json.loads(f_f.read())
+                    chats.append(
+                        (
+                            str(file.resolve()),
+                            title if title else (
+                                Path(f_f.name).stem+" : "+JSON[0].get("content", "")[:30] if len(JSON) > 0 else ""
+                            ) + "..."
+                        )
+                    )
             
             chats.append(("<new>", "< Make a new chat >"))
             
@@ -172,18 +186,23 @@ def _main(
                 options=chats,
             )
             if result == "<new>":
-                save_chat_file = os.path.join(
+                save_chat_file_base = os.path.join(
                     t.BASE_BASE,
-                    f"chat.log-{datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d_%H-%M-%S")}.bin"
+                    f"chat.log-{datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d_%H-%M-%S")}"
                 )
+                save_chat_file = f"{save_chat_file_base}.bin"
+                
                 Path(save_chat_file).write_text(json.dumps([]))
+                Path(f"{save_chat_file_base}.json").write_text(json.dumps({}))
             else:
                 save_chat_file = result
         else:
             save_chat_file = os.path.join(str(t.BASE_BASE), "chat.log.bin")
     
+    
     # pyrefly: ignore[unbound-name]
     if save_chat and os.path.isfile(save_chat_file):
+        t.CHAT_META = Path(os.path.join(str(t.BASE_BASE), f"{Path(save_chat_file).stem}.json"))
         with open(save_chat_file, "rb") as f:
             session.load(f.read())
     
@@ -196,7 +215,9 @@ def _main(
     TTS_time = 1.5
     
     live = None
-    input_stdin = prompt_toolkit.PromptSession(history=prompt_toolkit.history.FileHistory(os.path.join(t.BASE_BASE, "history.txt"))).prompt
+    input_stdin = prompt_toolkit.PromptSession(
+        history=prompt_toolkit.history.FileHistory(os.path.join(t.BASE_BASE, "history.txt"))
+    ).prompt
     try:
         while True:
             _input = input_stdin(">").strip() if not prompt else prompt
@@ -261,7 +282,6 @@ def _main(
                                 Text(tools_data, style="bold cyan"),
                                 Markdown(content),
                                 "\n" + bar_io.getvalue().split("\r")[-1].strip(),
-                                #f"tokenization left : {len(session.messages[-1].get("content", 0)) * session.estimation_tokenization_factor:.64f}"
                                 f"character spike : {session.spike_char}",
                                 f"token/s : {session.token_per_sec}"
                             )

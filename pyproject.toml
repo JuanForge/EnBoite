@@ -52,7 +52,8 @@ dev = [
     "types-docker",
     "types-paramiko",
     "types-psutil",
-    "types-tqdm"
+    "types-tqdm",
+    "types-pynput"
 ]
 
 [tool.setuptools.package-data]
