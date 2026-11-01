@@ -1,4 +1,5 @@
 import argparse
+import datetime
 import importlib
 import importlib.resources
 import io
@@ -8,7 +9,6 @@ import sys
 import time
 from collections.abc import Callable
 from io import BytesIO
-from typing import Any
 
 import prompt_toolkit
 import prompt_toolkit.history
@@ -47,8 +47,8 @@ def speaker(content: bytes) -> None:
 def _prompt(x: list[str]) -> str:
     return "".join([line for line in x if not line.lstrip().startswith(">")])
 
-# pyrefly: ignore [bad-return]
-def loadToolings() -> dict[str, Callable]:
+
+def loadToolings() -> dict[str, Callable[..., bool|str|dict[str, str]]]:
     functions = {}
     
     for name in dir(tooling):
@@ -112,7 +112,7 @@ def _main(
         t._set_base(str((Path.home() / "Documents" / "enboite-share" ).resolve()))
     
     config = loadConfig(str(t.BASE_BASE))
-    tools: list[dict[str, Any]] = []
+    tools = []
     
     total_tools = loadToolings()
     print("="* 40)
@@ -137,7 +137,7 @@ def _main(
             print(f"{c.RED}not found : {func_name}{c.RESET}")
     print("="* 40)
     
-    save_chat_file = os.path.join(str(t.BASE_BASE), "chat.log.bin")
+    # save_chat_file = os.path.join(str(t.BASE_BASE), "chat.log.bin")
     
     tools = tooling._build_v2(tools)
     if dbg_tools:
@@ -156,9 +156,33 @@ def _main(
     t.SESSION_LLM = session
     
     for f in Path(os.path.join(t.BASE_BASE, "tools")).glob("*.py"):
-        _f_c = t._tool_load(f.stem)
-        #tools.extend(t._build_v2(f_c))
+        t._tool_load(f.stem)
     
+    if save_chat:
+        if not non_interactive:
+            chats: list[tuple[str, str]] = []
+            for file in Path(t.BASE_BASE).glob("chat.log*.bin"):
+                with open(str(file), "r", encoding="utf-8") as f_f:
+                    chats.append((str(file.resolve()), str(json.loads(f_f.read())[0]["content"][:30]) + "..."))
+            
+            chats.append(("<new>", "< Make a new chat >"))
+            
+            result = prompt_toolkit.shortcuts.choice(
+                message="Select a chat history.",
+                options=chats,
+            )
+            if result == "<new>":
+                save_chat_file = os.path.join(
+                    t.BASE_BASE,
+                    f"chat.log-{datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d_%H-%M-%S")}.bin"
+                )
+                Path(save_chat_file).write_text(json.dumps([]))
+            else:
+                save_chat_file = result
+        else:
+            save_chat_file = os.path.join(str(t.BASE_BASE), "chat.log.bin")
+    
+    # pyrefly: ignore[unbound-name]
     if save_chat and os.path.isfile(save_chat_file):
         with open(save_chat_file, "rb") as f:
             session.load(f.read())

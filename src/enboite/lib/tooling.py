@@ -116,7 +116,7 @@ def _build(funcs: Callable|list[Callable]):
     return result
 """
 
-def _build_v2(funcs: Callable|list[Callable]):
+def _build_v2(funcs: Callable[..., Any]|list[Callable[..., Any]]):
     funcs = funcs if isinstance(funcs, list) else [funcs]
     return [
         {

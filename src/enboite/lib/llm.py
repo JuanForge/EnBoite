@@ -183,7 +183,8 @@ class client:
                     yield {"type": "tool", "function": i.get("function")}
                 
                 if not type(self.messages[-1].get("tool_calls")) is list:
-                    self.messages[-1]["tool_calls"] = []
+                    _tool_calls: list[dict[str, Any]] = []
+                    self.messages[-1]["tool_calls"] = _tool_calls
                 self.messages[-1]["tool_calls"].extend(calls)
             
             if data.get("done"):
