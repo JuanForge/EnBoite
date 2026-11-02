@@ -561,6 +561,25 @@ DOCKER_CONTAINER_MAX:int = 1
 DOCKER_CONTAINER_LIST:list[docker.models.containers.Container] = []  # noqa: F821
 DOCKER_CONTAINER_PULL: bool = False
 
+class _from_env_bloc:
+    import docker
+    def __enter__(self) -> docker.client.DockerClient:
+        import docker
+        self._s = docker.from_env()
+        return self._s
+    
+    def __exit__(self, *args):
+        self._s.close()
+
+def _container_pull(image: str) -> bool:
+    with _from_env_bloc() as client:
+        if _input_live(f"pull a image for the container: {image}", color=True):
+            client.images.pull(image)
+            return True
+        else:
+            raise _client.UserRefusedError()
+
+
 def container_start(
     image: str|None = None,
     gpus: list[int]|int|None = None
@@ -627,11 +646,7 @@ def container_start(
     else:
         raise RuntimeError("inlid argument for 'gpus'")
     
-    client = None
-    try:
-        client = docker.from_env()
-        
-        # base image
+    with _from_env_bloc() as client:
         client.images.pull(base)
         
         try:
@@ -677,9 +692,11 @@ def container_start(
         
         # pyrefly: ignore [unsupported-operation]
         return f"True\nusername : {"root"!r},\npassword : {pswd!r},\nip : {'localhost'!r},\nport(s) :\n  " + "\n  ".join(f"port container : {i} > host port {z[0]["HostPort"]}" for i, z in container.ports.items())
-    finally:
-        if client:
-            client.close()
+
+def container_pull(image: str):
+    """pull a image"""
+    _container_pull(image)
+
 
 def container_stop_all() -> None:
     """
