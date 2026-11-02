@@ -776,8 +776,7 @@ def screenshot_file(monitors_index: list[int]) -> str:
 
 def read_image(
     file: str,
-    host: bool = False,
-    quality: int = 60,
+    quality: int = 75,
     resolution: int = 720
 ):
     """
@@ -799,34 +798,31 @@ def read_image(
     import cv2
     import numpy as np
     
-    if not host:
-        _path = _secure_path(file)
-    elif FS_PERMIT_HOST:
-        _path = file
-    else:
-        raise _client.FS.HostAccessDeniedError()
+    _path = _request_fs_elevation(file)
     
-    if not os.path.isfile(_path):
-        raise FileNotFoundError("no found the input file path")
+    # if not os.path.isfile(_path):
+    #     raise FileNotFoundError("no found the input file path")
     
-    if quality:
-        with Image.open(_path) as img:
-            buffer = BytesIO()
-            img.convert("RGB").save(buffer, format="JPEG", quality=quality, optimize=True)
-            image = buffer.getvalue()
-    else:
-        with open(_path, "rb") as f:
-            image = f.read()
+    # if quality:
+    #     with Image.open(_path) as img:
+    #         buffer = BytesIO()
+    #         img.convert("RGB").save(buffer, format="JPEG", quality=quality, optimize=True)
+    #         image = buffer.getvalue()
+    # else:
+    #     with open(_path, "rb") as f:
+    #         image = f.read()
+    with open(_path, "rb") as f:
+        image = f.read()
+    
+    img = cv2.imdecode(
+        np.frombuffer(image, np.uint8),
+        cv2.IMREAD_COLOR
+    )
+    
+    if img is None:
+        raise ValueError("Failed to decode image")
     
     if resolution != 0:
-        img = cv2.imdecode(
-            np.frombuffer(image, np.uint8),
-            cv2.IMREAD_COLOR
-        )
-        
-        if img is None:
-            raise ValueError("Failed to decode image")
-        
         height, width = img.shape[:2]
         
         scale = resolution / math.sqrt(width * height)
@@ -839,19 +835,26 @@ def read_image(
             (new_width, new_height),
             interpolation=cv2.INTER_AREA
         )
-        
-        success, encoded = cv2.imencode(
-            ".jpg",
-            img,
-            [cv2.IMWRITE_JPEG_QUALITY, quality]
-        )
-        
-        if not success:
-            raise ValueError("Failed to encode image")
-        
-        image = encoded.tobytes()
     
-    with open(os.path.join(BASE_TEMP, f"{datetime.now().astimezone().strftime("%Y-%m-%d_%H-%M-%S")}_{secrets.token_hex(8)}.{resolution}p.jpeg"), "wb") as f:
+    success, encoded = cv2.imencode(
+        ".jpg",
+        img,
+        [
+            cv2.IMWRITE_JPEG_QUALITY,
+            quality if quality else 100
+        ]
+    )
+    
+    if not success:
+        raise ValueError("Failed to encode image")
+    
+    image = encoded.tobytes()
+    
+    with open(
+        os.path.join(
+            BASE_TEMP,
+            f"{datetime.now().astimezone().strftime("%Y-%m-%d_%H-%M-%S")}_{secrets.token_hex(8)}.{resolution}p.jpeg"
+            ), "wb") as f:
         f.write(image)
     
     return {"type": "images", "value": [base64.b64encode(image).decode("ascii")]}
