@@ -945,15 +945,16 @@ def unload_llm() -> None:
 
 # ==== FS ==== start
 
-def FS_mkdir(path: str) -> str:
+def FS_mkdir(path: str) -> None:
+    "syscall mkdir"
+    os.mkdir(str(_secure_path(path)))
+
+def FS_makedirs(path: str) -> None:
     """
+    high-level makedirs
     Creates a directory (and parent directories if needed).
-    The path is relative to the shared base directory.
-    Returns the absolute path of the created directory.
     """
-    target = _secure_path(path, make=True)
-    os.makedirs(target, exist_ok=True)
-    return f"Directory created: {target}"
+    os.makedirs(_secure_path(path, make=True), exist_ok=True)
 
 def FS_info(
     path: str,
@@ -995,55 +996,46 @@ def FS_write(file: str, content: str, mode: str = "w") -> str:
         f.write(content)
     return f"Content written to {target} ({len(content)} bytes)"
 
-def FS_delete(path: str) -> str:
-    """
-    Deletes a file from the shared directory.
-    The path is relative to the shared base directory.
-    Raises an error if the file doesn't exist or if it's a directory.
-    """
-    target = _secure_path(path, make=False)
-    if not target.exists():
-        raise FileNotFoundError("File not found")
-    if target.is_dir():
-        raise IsADirectoryError("Cannot delete directory with this tool")
-    target.unlink()
-    return f"Deleted: {target}"
+def FS_unlink(path: str) -> None:
+    "syscall unlink"
+    os.unlink(str(_secure_path(path)))
 
-def FS_move(source: str, destination: str) -> bool:
-    """
-    Moves a file from source to destination within the shared directory.
-    Paths are relative to the shared base directory.
-    """
-    src = _secure_path(source, make=False)
-    dst = _secure_path(destination, make=True)
-    
-    if not src.exists():
-        raise FileNotFoundError("Source file not found")
+def FS_rmdir(path: str) -> None:
+    "syscall rmdir"
+    os.rmdir(str(_secure_path(path)))
+
+def FS_rename(old: str, new: str) -> None:
+    "syscall rename"
+    os.rename(
+        str(_secure_path(old)),
+        str(_secure_path(new))
+    )
+
+def FS_move(source: str, destination: str) -> None:
+    "high-level move"
+    src = _secure_path(source)
+    dst = _secure_path(destination)
     
     shutil.move(str(src), str(dst))
-    # return f"Moved from {source} to {destination}"
-    return True
 
-def FS_copy(source: str, destination: str) -> bool:
+def FS_copy(source: str, destination: str) -> None:
     """
+    high-level copy
     Copies a file from source to destination within the shared directory.
-    Paths are relative to the shared base directory.
     source can be a full path, to transfer user files to the shared folder.
-    """
+    """# Paths are relative to the shared base directory.
     src = _request_fs_elevation(source)
     dst = _secure_path(destination, make=True)
     
-    # if not src.exists():
-    #     raise FileNotFoundError("Source file not found:")
-    
     shutil.copy2(str(src), str(dst))
-    #return f"Copied from {source} to {destination}"
-    return True
+
+def FS_rmtree(path: str) -> None:
+    "high-level rmtree"
+    shutil.rmtree(_secure_path(path))
 
 
 def FS_ls(
     path: str,
-    host: bool = False,
     only: list[str]|None = None
 ) -> str:
     """
@@ -1057,12 +1049,7 @@ def FS_ls(
     
     - only: Specify an extension to only display files that have it (txt, jpg, md).
     """
-    if not host:
-        _path = _secure_path(path)
-    elif FS_PERMIT_HOST:
-        _path = path
-    else:
-        raise _client.FS.HostAccessDeniedError()
+    _path = _request_fs_elevation(path)
     
     results: list[str] = []
     for i in list(Path(_path).glob("*")):
@@ -1085,7 +1072,6 @@ def FS_ls(
 
 def FS_read(
     file: str,
-    host: bool,
     start: int = 0,
     end: int = 2048
 ) -> str:
@@ -1110,13 +1096,7 @@ def FS_read(
     Remember to use this tool multiple times if a complete read is required or if
     a single read is not sufficient.
     """
-    if not host:
-        _file = _secure_path(file)
-    elif FS_PERMIT_HOST:
-        _file = file
-    else:
-        raise _client.FS.HostAccessDeniedError()
-    
+    _file = _request_fs_elevation(file)
     
     _max = 8192
     
@@ -1141,7 +1121,10 @@ def FS_pwd(host: bool = False) -> str:
         return str(BASE_SHARE)
 
 def FS_request_host_access():
-    """Requests user permission to access the host filesystem."""
+    """
+    Requests user permission to access the host filesystem.
+    The user authorizes or denies access
+    """
     global FS_PERMIT_HOST
     if _input_live("The assistant requests access to the host filesystem.", y_n=True, color=True):
         FS_PERMIT_HOST = True
@@ -1190,7 +1173,7 @@ def exec_python(code: str, timeout: int = 60, writeoutput: bool = False) -> dict
                 print(str(result))
         
         except subprocess.TimeoutExpired:
-            result["exception"] = f"Timeout après {timeout}s"
+            result["exception"] = f"Timeout exceeded after: {timeout}s"
             result["stderr"] = "Killed by timeout"
         
         except Exception as e:  # noqa: BLE001
@@ -1232,7 +1215,7 @@ def note_new(title: str, content: str) -> str:
     content: The content of the note.
     
     Returns: The ID of the created note.
-    """ # without any loss of information.
+    """
     
     counter_file = Path(os.path.join(BASE_NOTE, "counter.ini"))
     if not counter_file.exists():
@@ -1403,10 +1386,10 @@ def tool_rm(name: str):
 
 def keyboard_key(x: str, t: float|None=None):
     """
-    x: touche clavier
+    x: Keyboard key
     time: duration (seconds) to hold the key down.
     
-    adapté pour UNE touche
+    Adapted for ONE key
     """
     import time
     
@@ -1431,7 +1414,7 @@ def keyboard_press(x: str):
     
     x: Text to type.
     
-    adapté au TEXTE
+    Adapted to TEXT
     """
     import pynput
     import pynput.keyboard

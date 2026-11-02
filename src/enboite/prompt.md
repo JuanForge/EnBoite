@@ -95,6 +95,8 @@ All FS tools that do not allow specifying `host` are restricted to operating onl
 - If a file or image has already been read or partially read,
 adapt your behavior accordingly to avoid rereading unnecessary content and minimize token usage.
 
+# Temp
+- The `tmp` folder in your workspace is regularly cleaned up/emptied.
 
 > Analyze the request.
 > Determine the necessary tools.
