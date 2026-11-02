@@ -333,38 +333,46 @@ def main():
     )
     parser.add_argument(
         "--model",
-        default=None
+        default=None,
+        help="Name of the local LLM model to use."
     )
     parser.add_argument(
         "--prompt",
-        default=None
+        default=None,
+        help="Text prompt to send once, then exit (non-interactive mode)."
     )
     parser.add_argument(
         "--prompt-file",
-        default=None
+        default=None,
+        help="Path to a file containing the prompt text."
     )
     parser.add_argument(
         "--data-dir",
         default=None,
-        type=str
+        type=str,
+        help="Directory used to store chat history, config and tool state."
     )
     parser.add_argument(
         "--thinking",
-        action="store_true"
+        action="store_true",
+        help="Enable the model's reasoning."
     )
     parser.add_argument(
         "--no-save-chat",
-        action="store_true"
+        action="store_true",
+        help="Do not save the conversation history to disk."
     )
     parser.add_argument(
         "--limit-content-size",
         type=int,
-        default=None
+        default=None,
+        help="Maximum number of characters kept for the streamed response display."
     )
     parser.add_argument(
         "--ctx",
         type=int,
-        default=2048
+        default=2048,
+        help="Size of the model's context window."
     )
     parser.add_argument(
         "--non-interactive",
@@ -374,30 +382,35 @@ def main():
         "--enable-tools",
         nargs="+",
         type=str,
-        default=[]
+        default=[],
+        help="List of tools to force-enable."
     )
     parser.add_argument(
         "--disable-tools",
         nargs="+",
         type=str,
-        default=[]
+        default=[],
+        help="List of tools to force-disable"
     )
     parser.add_argument(
         "--no-tools",
-        help="Deactivates all tools.",
-        action="store_true"
+        action="store_true",
+        help="Deactivates all tools."
     )
     parser.add_argument(
         "--dbg-tools",
-        action="store_true"
+        action="store_true",
+        help="Print the full tool schema (JSON) for debugging."
     )
     parser.add_argument(
         "--endpoint",
-        default="http://127.0.0.1:11434"
+        default="http://127.0.0.1:11434",
+        help="Base URL of the LLM API endpoint (default: http://127.0.0.1:11434)."
     )
     parser.add_argument(
         "--proxy",
-        default=None
+        default=None,
+        help="Proxy URL used to reach the LLM endpoint (e.g. socks5h://127.0.0.1:9050)."
     )
     parser.add_argument(
         "--android",
