@@ -629,7 +629,7 @@ def container_start(
     
     image = image if image else base
     
-    pswd = secrets.token_hex(32)
+    pswd = secrets.token_hex(16)
     name = f"enboite-{secrets.token_hex(16)}"
     
     with open(str(importlib.resources.files("enboite").joinpath("enboite.container.bootstrap.sh")), "r", encoding="utf-8") as f:
