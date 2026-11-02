@@ -24,6 +24,7 @@ except ImportError as e:
     print(e)
 
 import inspect
+import shutil
 from pathlib import Path
 
 import tomlkit
@@ -36,6 +37,14 @@ from tqdm import tqdm
 from enboite.lib import TTS, llm, tooling
 from enboite.lib import color as c
 from enboite.lib import tooling as t
+
+
+def clear_tmp(folder: str):
+    for item in Path(folder).iterdir():
+        if item.is_dir():
+            shutil.rmtree(item)
+        else:
+            item.unlink()
 
 
 def speaker(content: bytes) -> None:
@@ -110,6 +119,8 @@ def _main(
         t._set_base(str((Path("/storage/emulated/0") / "Documents" / "enboite-share").resolve()))
     else:
         t._set_base(str((Path.home() / "Documents" / "enboite-share" ).resolve()))
+    
+    clear_tmp(os.path.join(t.BASE_SHARE, "tmp"))
     
     config = loadConfig(str(t.BASE_BASE))
     tools = []
