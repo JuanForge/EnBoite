@@ -57,7 +57,10 @@ dev = [
 ]
 
 [tool.setuptools.package-data]
-enboite = ["prompt.md"]
+enboite = [
+    "prompt.md",
+    "enboite.container.bootstrap.sh"
+]
 
 [project.scripts]
 enboite = "enboite.main:main"

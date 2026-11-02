@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import base64
 import datetime as dt
+import importlib
+import importlib.resources
 import inspect
 import json
 import math
@@ -630,7 +632,7 @@ def container_start(
     pswd = secrets.token_hex(32)
     name = f"enboite-{secrets.token_hex(16)}"
     
-    with open("enboite.container.bootstrap.sh", "r", encoding="utf-8") as f:
+    with open(str(importlib.resources.files("enboite").joinpath("enboite.container.bootstrap.sh")), "r", encoding="utf-8") as f:
         bootstrap = f.read()
     
     device_request_kwargs: Any = {
@@ -1342,7 +1344,7 @@ def tool_create(name: str, description: str, input: str, file: bool, deps: list[
     r"""
     Allows you to add a tool to be executed later and multiple times by "you" (the LLM).
     
-    name: nom exposé, Allowed characters: a-z, A-Z, _
+    name: exposed name, Allowed characters: a-z, A-Z, _
     description: Complete documentation on tools, inputs, outputs, and typing, without being overly verbose.
     input:
       Python code ready. Always expose 'main', which will be used as the entry point,
