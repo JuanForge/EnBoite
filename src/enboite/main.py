@@ -75,11 +75,11 @@ def loadConfig(x: str):
             data = tomlkit.loads(f.read())
     else:
         table = tomlkit.table()
-        for key in loadToolings():
-            if not key.startswith(("TTS", "keyboard")):
-                table.add(key, True)
-            else:
-                table.add(key, False)
+        # for key in loadToolings():
+        #     if not key.startswith(("TTS", "keyboard")):
+        #         table.add(key, True)
+        #     else:
+        #         table.add(key, False)
         data = tomlkit.document()
         data["tools"] = table
         with open(conf, "w", encoding="utf-8") as f:
@@ -129,23 +129,22 @@ def _main(
     print("="* 40)
     print("==== tools ====")
     for func_name, func in total_tools.items():
-        if (func_name in enable_tools or func_name in config["tools"]):
-            if func_name in disable_tools:
-                use = False
-            elif func_name in enable_tools:
-                use = True
-            elif no_tools:
-                use = False
-            else:
-                use = config["tools"].get(func_name, False)
-            
-            if use:
-                print(f"{c.GREEN}use       : {func_name}{c.RESET}")
-                tools.append(func)
-            else:
-                print(f"{c.YELLOW}not use   : {func_name} {c.RESET}")
+        if func_name in disable_tools:
+            use = False
+        elif func_name in enable_tools:
+            use = True
+        elif no_tools:
+            use = False
         else:
-            print(f"{c.RED}not found : {func_name}{c.RESET}")
+            use = config["tools"].get(func_name, False)
+            if not use and not func_name.startswith(("TTS", "keyboard")):
+                use = True
+        
+        if use:
+            print(f"{c.GREEN}use       : {func_name}{c.RESET}")
+            tools.append(func)
+        else:
+            print(f"{c.YELLOW}not use   : {func_name} {c.RESET}")
     print("="* 40)
     
     # save_chat_file = os.path.join(str(t.BASE_BASE), "chat.log.bin")
