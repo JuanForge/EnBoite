@@ -301,7 +301,9 @@ def _main(
                         with open(save_chat_file, "wb") as f:
                             f.write(session.export())
                 except KeyboardInterrupt:
-                    pass
+                    if save_chat:
+                        with open(save_chat_file, "wb") as f:
+                            f.write(session.export())
             elif _input == "/log":
                 rich_console.print(json.dumps(session.messages, indent=4))
             elif _input == "/think":

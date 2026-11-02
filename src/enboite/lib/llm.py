@@ -80,7 +80,7 @@ class client:
         if messages[0]["role"] == "system":
             del messages[0]
         else:
-            raise RuntimeError("not found the system prompt:67")
+            raise RuntimeError("not found the system prompt:83")
         
         return orjson.dumps(messages)
     
@@ -148,22 +148,10 @@ class client:
         
         self.messages.append({"role": "assistant", "content": ""})
         
-        # first = True
         for line in response.iter_lines(chunk_size=1):
             line: bytes
             if not line:
                 continue
-            
-            # if first:
-            #     print("end factor")
-            #     _token = 0
-            #     for i in reversed(self.messages):
-            #         if i["role"] in ("user", "assistant"):
-            #             _token += len(i["content"])
-            #         else:
-            #             break
-            #     self.estimation_tokenization_factor = (time.monotonic() - start_time) / max(1, _token)
-            #     first = False
             
             data = orjson.loads(line)
             message = data.get("message", {})
@@ -172,7 +160,8 @@ class client:
                 chunk: str
                 
                 content += chunk
-                self.messages[-1]["content"] = self.messages[-1]["content"] + chunk
+                self.messages[-1]["content"] += chunk
+                #self.messages[-1]["content"] = self.messages[-1]["content"] + chunk
                 yield {"type": "content", "content": chunk}
             
             if chunk := message.get("thinking"):
