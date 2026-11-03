@@ -15,7 +15,40 @@ pip install .[full]
 ```bash
 pip install --no-cache-dir .
 ```
+# Arguments
+```bash
+usage: EnBoite [-h] [--model MODEL] [--prompt PROMPT] [--prompt-file PROMPT_FILE] [--data-dir DATA_DIR]
+               [--thinking] [--no-save-chat] [--limit-content-size LIMIT_CONTENT_SIZE] [--ctx CTX]
+               [--non-interactive] [--enable-tools ENABLE_TOOLS [ENABLE_TOOLS ...]]
+               [--disable-tools DISABLE_TOOLS [DISABLE_TOOLS ...]] [--no-tools] [--dbg-tools]
+               [--endpoint ENDPOINT] [--proxy PROXY] [--android]
 
+Give your AI agent full control over a system through SSH.
+
+options:
+  -h, --help            show this help message and exit
+  --model MODEL         Name of the local LLM model to use.
+  --prompt PROMPT       Text prompt to send once, then exit (non-interactive mode).
+  --prompt-file PROMPT_FILE
+                        Path to a file containing the prompt text.
+  --data-dir DATA_DIR   Directory used to store chat history, config and tool state.
+  --thinking            Enable the model's reasoning.
+  --no-save-chat        Do not save the conversation history to disk.
+  --limit-content-size LIMIT_CONTENT_SIZE
+                        Maximum number of characters kept for the streamed response display.
+  --ctx CTX             Size of the model's context window.
+  --non-interactive
+  --enable-tools ENABLE_TOOLS [ENABLE_TOOLS ...]
+                        List of tools to force-enable.
+  --disable-tools DISABLE_TOOLS [DISABLE_TOOLS ...]
+                        List of tools to force-disable
+  --no-tools            Deactivates all tools.
+  --dbg-tools           Print the full tool schema (JSON) for debugging.
+  --endpoint ENDPOINT   Base URL of the LLM API endpoint (default: http://127.0.0.1:11434).
+  --proxy PROXY         Proxy URL used to reach the LLM endpoint (e.g. socks5h://127.0.0.1:9050).
+  --android             Must be enabled if the system is Termux/Android; only Android has been
+                        verified.
+```
 
 # Examples
 
@@ -61,7 +94,7 @@ pip install --no-cache-dir .
 # Python
 Python 3.12.3
 
-## Security
+# Security
 
 Security is my top priority.
 All sensitive actions require explicit user authorization, allowing users to maintain control over every sensitive operation.
