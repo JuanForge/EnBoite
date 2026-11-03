@@ -35,5 +35,5 @@ with open(sys.argv[1], "r", encoding="utf-8") as f:
         RESULT[ID] = chat
     
     for ID, chat in RESULT.items():
-        with open(os.path.join(sys.argv[2], f"{ID}.json"), "w", encoding="utf-8") as f:
+        with open(os.path.join(sys.argv[2], f"chat.log-grok-{ID}.bin"), "w", encoding="utf-8") as f:
             f.write(json.dumps(chat, indent=4))
