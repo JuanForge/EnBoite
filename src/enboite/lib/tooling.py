@@ -33,6 +33,7 @@ from rich.live import Live as rich_Live
 from screeninfo import get_monitors
 
 from enboite.lib import TTS
+from enboite.lib import color as c
 
 FS_PERMIT_HOST: bool = False
 INTERACTIVE: bool = True
@@ -157,17 +158,27 @@ class add:
 
 LIVE: None | rich_Live = None
 
-def _input_live(*args: Any, y_n: bool=True, color: bool=False) -> str|bool:
+def _input_live(*args: Any, y_n: bool=True, color: bool=False, _json=False) -> str|bool:
     if INTERACTIVE:
         try:
             if LIVE:
                 LIVE.stop()
         except Exception as e:  # noqa: BLE001
             print(e)
+        
+        if c.STATUS:
+            c_0 = "\033[48;5;22m\033[38;5;15m"
+            c_1 = "\033[0m"
+        else:
+            c_1 = c_0 = ""
         for i in args:
-            for line in str(i).splitlines():
-                if color: line = f"\033[48;5;22m\033[38;5;15m{line!r}\033[0m"
-                print(line)
+            if _json:
+                print(json.dumps(i, indent=4))
+            else:
+                for line in str(i).splitlines():
+                    if color:
+                        line = c_0 + repr(line) + c_1
+                    print(line)
             print("\n", end="")
         
         value = input("input requit y/n >" if y_n else "input requit >").strip()
@@ -235,25 +246,91 @@ def _request_fs_elevation(path: str|Path) -> Path:
             return Path(str(path))
 
 
-def get_time():
+def time_get():
     """
     Provides the user's local time and other time-related information.
     """
     return datetime.now().astimezone()
 
+def _exec_shell(commande: str, cwd: str = os.getcwd()) -> str:
+    rs = subprocess.run(
+        commande,
+        shell=True,
+        capture_output=True,
+        text=True,
+        check=False,
+        cwd=cwd
+    )
+    return str(
+        {
+            "stdout": rs.stdout,
+            "stderr": rs.stderr,
+            "returncode": rs.returncode
+        }
+    )
 
-def exec_shell(commande: str):
-    """Allows executing commands in a Bash terminal."""
-    if _input_live(commande, "execute_command", y_n=True, color=True):
-        rs = subprocess.run(
-            commande,
-            shell=True,
-            capture_output=True,
+def spawn(
+    task: str,
+    model: str  = "lfm3:1.7b",
+    ctx: int = 256000,
+    thinking: bool|None=None
+) -> str:
+    """
+    Delegating a task or part of the work to another LLM,
+    by providing an independent prompt containing the instructions and context required for parallel execution,
+    then retrieving its result.
+    Useful for reading large files or analyzing lengthy web pages to request focused summaries without cluttering the main context.
+    Useful for delegating resource-intensive tasks, such as reading large files or analyzing lengthy web pages,
+    with specific instructions to extract relevant information, answer targeted questions, or produce focused summaries.
+    
+    The LLM has the same capabilities as the current session (tools, limitations, etc.).
+    
+    - task:
+      Contains the instructions defining the task,
+      the context required to perform it, and the expected output format and content.
+    """
+    _prompt = """
+        Always request responses in plain text, with no formatting whatsoever.
+        No Markdown, emojis, headings, bullet points, or unnecessary explanations.
+        Keep answers concise, direct, and straight to the point.
+        Prioritize clarity and information density to achieve the best possible results with the fewest tokens.
+    """
+    with tempfile.TemporaryDirectory() as tmp:
+        args = sys.argv.copy()
+        args += [
+            "--model", model,
+            "--ctx", str(ctx),
+            "--non-interactive",
+            "--data-dir", tmp,
+            "--disable-tools", "spawn",
+            "--plain",
+            "--prompt", _prompt + "\n"*2 + task,
+        ]
+        process = subprocess.Popen(
+            args,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             text=True,
-            check=False,
-            cwd=os.getcwd()
-            )
-        return f"stdout : {rs.stdout}, stderr : {rs.stderr}, returncode : {rs.returncode}"
+            bufsize=1,
+            cwd=tmp,
+            shell=False
+        )
+        stdout, stderr = process.communicate()
+        value = (
+            f"--- stdout ---\n{stdout}\n"
+            f"--- stderr ---\n{stderr}\n"
+            f"--- returncode ---\n{process.returncode}\n"
+        )
+        with open(os.path.join(BASE_TEMP, secrets.token_hex(16)), "w") as f:
+            f.write(value)
+        
+        return value
+
+def exec_shell(commande: str, cwd:str = os.getcwd()):
+    """Allows executing commands in a Bash terminal."""
+    if _input_live(commande, cwd, "exec_shell", y_n=True, color=True):
+        return _exec_shell(commande, cwd=cwd)
     else:
         raise _client.UserRefusedError()
 
@@ -405,7 +482,7 @@ def system():
     return _.result
 
 
-def get_ip():
+def ip_get() -> str:
     """
     Retrieves the local IP used for connections and the public IP.
     """
@@ -423,7 +500,7 @@ def get_ip():
     return f"local : {ip}, public_IPv4 : {get_ip("https://api.ipify.org")}, public_IPv6 : {get_ip("https://api6.ipify.org")}"
 
 
-def get_geo_ip(ip: str):
+def geo_ip_get(ip: str) -> str:
     """
     Provides geolocation information for an IP address using GeoLite2-City,
     including the geographic coordinates (latitude and longitude).
@@ -1371,8 +1448,8 @@ def tool_create(name: str, description: str, input: str, file: bool, deps: list[
 
 def tool_rm(name: str):
     # pyrefly: ignore[unnecessary-type-conversion]
-    for c in str(name):
-        if not c in string.ascii_letters+"_":
+    for _c in str(name):
+        if not _c in string.ascii_letters+"_":
             raise RuntimeError(f"invalid char: '{c}'")
     
     source = os.path.join(BASE_BASE, "tools", f"{name}.json")

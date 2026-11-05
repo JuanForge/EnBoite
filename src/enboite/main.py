@@ -40,11 +40,12 @@ from enboite.lib import tooling as t
 
 
 def clear_tmp(folder: str):
-    for item in Path(folder).iterdir():
-        if item.is_dir():
-            shutil.rmtree(item)
-        else:
-            item.unlink()
+    if os.path.exists(folder):
+        for item in Path(folder).iterdir():
+            if item.is_dir():
+                shutil.rmtree(item)
+            else:
+                item.unlink()
 
 
 def speaker(content: bytes) -> None:
@@ -104,9 +105,12 @@ def _main(
     data_dir: None|str,
     enable_tools: list[str],
     disable_tools: list[str],
-    no_tools: bool
-    #config: None|str
-):
+    no_tools: bool,
+    plain: bool
+) -> None:
+    if plain:
+        c.no_color()
+    
     if prompt_file:
         prompt = open(prompt_file, "r", encoding="utf-8").read()  # noqa: SIM115
     
@@ -126,8 +130,9 @@ def _main(
     tools = []
     
     total_tools = loadToolings()
-    print("="* 40)
-    print("==== tools ====")
+    if dbg_tools:
+        print("="* 40)
+        print("==== tools ====")
     for func_name, func in total_tools.items():
         if func_name in disable_tools:
             use = False
@@ -141,11 +146,11 @@ def _main(
                 use = True
         
         if use:
-            print(f"{c.GREEN}use       : {func_name}{c.RESET}")
+            if dbg_tools: print(f"{c.GREEN}use       : {func_name}{c.RESET}")
             tools.append(func)
         else:
-            print(f"{c.YELLOW}not use   : {func_name} {c.RESET}")
-    print("="* 40)
+            if dbg_tools: print(f"{c.YELLOW}not use   : {func_name} {c.RESET}")
+    if dbg_tools:  print("="* 40)
     
     # save_chat_file = os.path.join(str(t.BASE_BASE), "chat.log.bin")
     
@@ -244,7 +249,7 @@ def _main(
             thinking_data = ""
             tools_data = ""
             
-            if not _input.startswith("/"):
+            if len(str(_input)) > 0 and not _input.startswith("/"):
                 try:
                     for chunk in session.generate(_input):
                         if chunk["type"] == "content":
@@ -418,6 +423,10 @@ def main():
         help="Must be enabled if the system is Termux/Android; only Android has been verified.",
         action="store_true"
     )
+    parser.add_argument(
+        "--plain",
+        action="store_true"
+    )
     args = parser.parse_args()
     
     _main(
@@ -437,5 +446,6 @@ def main():
         #config=args.config
         enable_tools=args.enable_tools,
         disable_tools=args.disable_tools,
-        no_tools=args.no_tools
+        no_tools=args.no_tools,
+        plain=args.plain
     )
